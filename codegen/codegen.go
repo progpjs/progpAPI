@@ -129,7 +129,7 @@ func (m *ProgpV8CodeGenerator) GenerateCode(autoUpdateDir string) {
 
 	//region file : generated.go
 
-	template = `package progpV8
+	template = `package libProgpV8
 // #include <stdlib.h> // For C.free
 // #include "progpAPI.h"
 //
