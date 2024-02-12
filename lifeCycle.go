@@ -193,9 +193,9 @@ func EndOfAllBackgroundTasks() {
 func ExecuteScriptContent(scriptContent, scriptOrigin string, scriptEngine ScriptEngine) {
 	err := scriptEngine.ExecuteScript(scriptContent, scriptOrigin)
 
-	if err == nil {
-		// The script exit but the VM must continue to execute
-		// if a background task is executing.
+	if err != nil {
+		// If no error the script exit but the VM must continue to execute
+		// if a background task is executing. If error, then stop all.
 		//
 		EndOfAllBackgroundTasks()
 	}
