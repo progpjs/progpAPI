@@ -26,10 +26,11 @@ import (
 //region ScriptErrorMessage
 
 type ScriptErrorMessage struct {
-	ScriptIsolate ScriptIsolate
+	scriptIsolate ScriptIsolate
 
 	isTranslated bool
 	isLogged     bool
+	isPrinted    bool
 
 	Error      string
 	ErrorLevel int
@@ -47,6 +48,14 @@ type ScriptErrorMessage struct {
 	StackTraceFrames     []StackTraceFrame
 }
 
+func NewScriptErrorMessage(iso ScriptIsolate) *ScriptErrorMessage {
+	return &ScriptErrorMessage{scriptIsolate: iso}
+}
+
+func (m *ScriptErrorMessage) GetScriptIsolate() ScriptIsolate {
+	return m.scriptIsolate
+}
+
 type StackTraceFrame struct {
 	Line     int
 	Column   int
@@ -55,11 +64,14 @@ type StackTraceFrame struct {
 }
 
 func (m *ScriptErrorMessage) Translate() {
-	/*if !m.isTranslated && gScriptTransformer != nil {
-		gScriptTransformer.TranslateErrorMessage(m)
+	if m.isTranslated {
+		return
 	}
+	m.isTranslated = true
 
-	m.isTranslated = true*/
+	if gErrorTranslator != nil {
+		gErrorTranslator(m)
+	}
 }
 
 func (m *ScriptErrorMessage) StackTrace() string {
@@ -77,10 +89,23 @@ func (m *ScriptErrorMessage) StackTrace() string {
 	return res
 }
 
-func (m *ScriptErrorMessage) Print() {
+func (m *ScriptErrorMessage) Print(forcePrinting bool) {
+	if m.isPrinted && !forcePrinting {
+		return
+	}
+	m.isPrinted = true
+
 	m.Translate()
 	fmt.Printf("Javascript Error - %s\n", m.Error)
 	print(m.StackTrace())
+}
+
+func (m *ScriptErrorMessage) LogError() {
+	if (m == nil) || m.isLogged {
+		return
+	}
+	m.isLogged = true
+	m.Print(false)
 }
 
 // DisarmError allows to continue after an un-catch error.
@@ -90,22 +115,9 @@ func (m *ScriptErrorMessage) DisarmError(isolate ScriptIsolate) {
 
 //endregion
 
-func LogScriptError(error *ScriptErrorMessage) {
-	if (error == nil) || (error.isLogged) {
-		return
-	}
-
-	error.isLogged = true
-	error.Print()
-}
-
 func OnUnCatchScriptError(error *ScriptErrorMessage) {
-	if gErrorTranslator != nil {
-		gErrorTranslator(error)
-	}
-
-	LogScriptError(error)
-	error.ScriptIsolate.GetScriptEngine().Shutdown()
+	error.LogError()
+	error.scriptIsolate.GetScriptEngine().Shutdown()
 }
 
 func SetErrorTranslator(handler ErrorTranslatorF) {
@@ -133,7 +145,7 @@ func (m *ScriptExecResult) HasError() bool {
 
 func (m *ScriptExecResult) PrintError() bool {
 	if m.ScriptError != nil {
-		m.ScriptError.Print()
+		m.ScriptError.Print(false)
 		return true
 	} else if m.GoError != nil {
 		println("GO ERROR - " + m.GoError.Error())
@@ -180,7 +192,7 @@ func ForceExitingVM() {
 	})
 }
 
-func EndOfAllBackgroundTasks() {
+func EndAllBackgroundTasks() {
 	<-gBackgroundTasksWaitChannel
 }
 
@@ -188,14 +200,14 @@ func EndOfAllBackgroundTasks() {
 
 //region Executing script
 
-func ExecuteScriptContent(scriptContent, scriptOrigin string, scriptEngine ScriptEngine) {
-	err := scriptEngine.GetDefaultIsolate().ExecuteStartScript(scriptContent, scriptOrigin)
+func ExecuteScriptContent(scriptContent, scriptOrigin string, sourceScriptPath string, scriptEngine ScriptEngine) {
+	err := scriptEngine.GetDefaultIsolate().ExecuteStartScript(scriptContent, scriptOrigin, sourceScriptPath)
 
 	if err != nil {
 		// If no error the script exit but the VM must continue to execute
 		// if a background task is executing. If error, then stop all.
 		//
-		EndOfAllBackgroundTasks()
+		EndAllBackgroundTasks()
 	}
 }
 

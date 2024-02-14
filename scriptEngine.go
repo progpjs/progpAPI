@@ -61,7 +61,22 @@ type ScriptEngine interface {
 	// to execute a new script isolated from the others scripts.
 	//
 	CreateIsolate(securityGroup string) ScriptIsolate
+
+	// SetRuntimeErrorHandler allows to set a function which will manage runtime error.
+	// The handler runtime true if the error is handler or false
+	// to use the default behavior, which consist of printing the error and exit.
+	//
+	SetRuntimeErrorHandler(handler RuntimeErrorHandlerF)
+
+	// SetScriptTerminatedHandler allows to add a function triggered when the script has finished his execution, with or without error.
+	// It's call when all asynchronous function are executed, end before the end of the background tasks.
+	// (mainly because this tasks can continue to executed without needing the javascript VM anymore)
+	//
+	SetScriptTerminatedHandler(handler ScriptTerminatedHandlerF)
 }
+
+type RuntimeErrorHandlerF func(iso ScriptIsolate, err *ScriptErrorMessage) bool
+type ScriptTerminatedHandlerF func(iso ScriptIsolate, scriptPath string, err *ScriptErrorMessage) *ScriptErrorMessage
 
 type ScriptFunction interface {
 	CallWithUndefined()
@@ -93,7 +108,7 @@ type ScriptIsolate interface {
 
 	// ExecuteStartScript executes a script inside this isolate.
 	// It must be used once and don't allow executing more than one script.
-	ExecuteStartScript(scriptContent string, compiledFilePath string) *ScriptErrorMessage
+	ExecuteStartScript(scriptContent string, compiledFilePath string, sourceScriptPath string) *ScriptErrorMessage
 
 	// TryDispose destroy the isolate and free his resources.
 	// It's do nothing if this isolate can't be disposed, for
