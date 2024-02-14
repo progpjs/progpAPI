@@ -42,31 +42,69 @@ type ScriptEngine interface {
 	// For exemple if it's using Google V8, then return the v8 engine version.
 	GetInternalEngineVersion() string
 
-	// ExecuteScript execute a script by giving his content.
-	ExecuteScript(scriptContent string, compiledFilePath string) *ScriptErrorMessage
-
 	// Shutdown stop the engine. He can't be used anymore after that.
 	// It mainly occurs after a fatal error or at script ends.
 	Shutdown()
+
+	// IsMultiIsolateSupported returns true if the engine
+	// can use more than one isolate.
+	//
+	IsMultiIsolateSupported() bool
+
+	// GetDefaultIsolate returns the main isolate.
+	// It's never nil here, unlike the CreateIsolate function
+	// which returns nil if the engine doesn't support using more than one isolate.
+	//
+	GetDefaultIsolate() ScriptIsolate
+
+	// CreateIsolate creates a new isolate which can be used
+	// to execute a new script isolated from the others scripts.
+	//
+	CreateIsolate(securityGroup string) ScriptIsolate
+}
+
+type ScriptFunction interface {
+	CallWithUndefined()
+	CallWithError(err error)
+	KeepAlive()
+
+	// 2 mean second argument.
+	// It's used for callback for first argument is error message.
+
+	CallWithArrayBuffer2(buffer []byte)
+	CallWithString2(value string)
+	CallWithStringBuffer2(value []byte)
+	CallWithDouble2(value float64)
+
+	CallWithBool2(value bool)
+	CallWithResource2(value *SharedResource)
+}
+
+type ScriptCallback func(error *ScriptErrorMessage)
+
+type ScriptIsolate interface {
+	GetScriptEngine() ScriptEngine
+
+	// GetSecurityGroup returns a group name which allows knowing the category of this isolate.
+	// It's mainly used to allows / don't allow access to some functions groups.
+	// For exemple you can use security group "unsafe" then the script will no be able to access to Go functions.
+	//
+	GetSecurityGroup() string
+
+	// ExecuteStartScript executes a script inside this isolate.
+	// It must be used once and don't allow executing more than one script.
+	ExecuteStartScript(scriptContent string, compiledFilePath string) *ScriptErrorMessage
+
+	// TryDispose destroy the isolate and free his resources.
+	// It's do nothing if this isolate can't be disposed, for
+	// exemple if the engine only support one isole.
+	//
+	TryDispose() bool
 
 	// DisarmError remove the current error and allows continuing execution.
 	// The error params allows to avoid case where a new error occurs since.
 	DisarmError(error *ScriptErrorMessage)
 }
-
-type ScriptFunction interface {
-	CallWithArrayBuffer(buffer []byte)
-	CallWithString(value string)
-	CallWithStringBuffer(value []byte)
-	CallWithDouble(value float64)
-	CallWithUndefined()
-	CallWithError(err error)
-	CallWithBool(value bool)
-	CallWithResource(value *SharedResource)
-	KeepAlive()
-}
-
-type ScriptCallback func(error *ScriptErrorMessage)
 
 func ConfigRegisterScriptEngineBuilder(engineName string, builder ScriptEngineBuilder) {
 	gScriptEngineBuilder[engineName] = builder

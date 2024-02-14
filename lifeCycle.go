@@ -26,10 +26,10 @@ import (
 //region ScriptErrorMessage
 
 type ScriptErrorMessage struct {
+	ScriptIsolate ScriptIsolate
+
 	isTranslated bool
 	isLogged     bool
-
-	ScriptEngine ScriptEngine
 
 	Error      string
 	ErrorLevel int
@@ -84,10 +84,8 @@ func (m *ScriptErrorMessage) Print() {
 }
 
 // DisarmError allows to continue after an un-catch error.
-func (m *ScriptErrorMessage) DisarmError() {
-	if m.ScriptEngine != nil {
-		m.ScriptEngine.DisarmError(m)
-	}
+func (m *ScriptErrorMessage) DisarmError(isolate ScriptIsolate) {
+	isolate.DisarmError(m)
 }
 
 //endregion
@@ -107,7 +105,7 @@ func OnUnCatchScriptError(error *ScriptErrorMessage) {
 	}
 
 	LogScriptError(error)
-	error.ScriptEngine.Shutdown()
+	error.ScriptIsolate.GetScriptEngine().Shutdown()
 }
 
 func SetErrorTranslator(handler ErrorTranslatorF) {
@@ -191,7 +189,7 @@ func EndOfAllBackgroundTasks() {
 //region Executing script
 
 func ExecuteScriptContent(scriptContent, scriptOrigin string, scriptEngine ScriptEngine) {
-	err := scriptEngine.ExecuteScript(scriptContent, scriptOrigin)
+	err := scriptEngine.GetDefaultIsolate().ExecuteStartScript(scriptContent, scriptOrigin)
 
 	if err != nil {
 		// If no error the script exit but the VM must continue to execute
