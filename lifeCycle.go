@@ -197,18 +197,3 @@ func EndAllBackgroundTasks() {
 }
 
 //endregion
-
-//region Executing script
-
-func ExecuteScriptContent(scriptContent, scriptOrigin string, sourceScriptPath string, scriptEngine ScriptEngine) {
-	err := scriptEngine.GetDefaultIsolate().ExecuteStartScript(scriptContent, scriptOrigin, sourceScriptPath)
-
-	if err != nil {
-		// If no error the script exit but the VM must continue to execute
-		// if a background task is executing. If error, then stop all.
-		//
-		EndAllBackgroundTasks()
-	}
-}
-
-//endregion

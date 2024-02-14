@@ -60,7 +60,7 @@ type ScriptEngine interface {
 	// CreateIsolate creates a new isolate which can be used
 	// to execute a new script isolated from the others scripts.
 	//
-	CreateIsolate(securityGroup string) ScriptIsolate
+	CreateNewIsolate(securityGroup string, isolateData any) ScriptIsolate
 
 	// SetRuntimeErrorHandler allows to set a function which will manage runtime error.
 	// The handler runtime true if the error is handler or false
@@ -77,6 +77,10 @@ type ScriptEngine interface {
 
 type RuntimeErrorHandlerF func(iso ScriptIsolate, err *ScriptErrorMessage) bool
 type ScriptTerminatedHandlerF func(iso ScriptIsolate, scriptPath string, err *ScriptErrorMessage) *ScriptErrorMessage
+type ScriptCallbackF func(error *ScriptErrorMessage)
+type ScriptFileExecutorF func(so ScriptIsolate, scriptPath string) *ScriptErrorMessage
+
+var gScriptFileExecutor ScriptFileExecutorF
 
 type ScriptFunction interface {
 	CallWithUndefined()
@@ -95,8 +99,6 @@ type ScriptFunction interface {
 	CallWithResource2(value *SharedResource)
 }
 
-type ScriptCallback func(error *ScriptErrorMessage)
-
 type ScriptIsolate interface {
 	GetScriptEngine() ScriptEngine
 
@@ -106,9 +108,12 @@ type ScriptIsolate interface {
 	//
 	GetSecurityGroup() string
 
-	// ExecuteStartScript executes a script inside this isolate.
+	// ExecuteScript executes a script inside this isolate.
 	// It must be used once and don't allow executing more than one script.
-	ExecuteStartScript(scriptContent string, compiledFilePath string, sourceScriptPath string) *ScriptErrorMessage
+	ExecuteScript(scriptContent string, compiledFilePath string, sourceScriptPath string) *ScriptErrorMessage
+
+	// ExecuteScriptFile is like ExecuteScript but allows using a file (which can be typescript).
+	ExecuteScriptFile(iso ScriptIsolate, scriptPath string) *ScriptErrorMessage
 
 	// TryDispose destroy the isolate and free his resources.
 	// It's do nothing if this isolate can't be disposed, for
@@ -119,6 +124,14 @@ type ScriptIsolate interface {
 	// DisarmError remove the current error and allows continuing execution.
 	// The error params allows to avoid case where a new error occurs since.
 	DisarmError(error *ScriptErrorMessage)
+}
+
+func GetScriptFileExecutor() ScriptFileExecutorF {
+	return gScriptFileExecutor
+}
+
+func SetScriptFileExecutor(executor ScriptFileExecutorF) {
+	gScriptFileExecutor = executor
 }
 
 func ConfigRegisterScriptEngineBuilder(engineName string, builder ScriptEngineBuilder) {
