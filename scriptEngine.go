@@ -73,12 +73,15 @@ type ScriptEngine interface {
 	// (mainly because this tasks can continue to executed without needing the javascript VM anymore)
 	//
 	SetScriptTerminatedHandler(handler ScriptTerminatedHandlerF)
+
+	SetAllowedFunctionsChecker(handler CheckAllowedFunctionsF)
 }
 
 type RuntimeErrorHandlerF func(iso ScriptIsolate, err *ScriptErrorMessage) bool
 type ScriptTerminatedHandlerF func(iso ScriptIsolate, scriptPath string, err *ScriptErrorMessage) *ScriptErrorMessage
 type ScriptCallbackF func(error *ScriptErrorMessage)
 type ScriptFileExecutorF func(so ScriptIsolate, scriptPath string) *ScriptErrorMessage
+type CheckAllowedFunctionsF func(securityGroup string, functionGroup string, functionName string) bool
 
 var gScriptFileExecutor ScriptFileExecutorF
 
