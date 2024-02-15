@@ -450,3 +450,42 @@ func (m *TypeSharedResource) GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string
 }
 
 //endregion
+
+//region *progpAPI.TypeSharedResourceContainer
+
+type TypeSharedResourceContainer struct {
+}
+
+func (m *TypeSharedResourceContainer) CppToCgoParamCall(paramName string, ctx *ProgpV8CodeGenerator) string {
+	return ""
+}
+
+func (m *TypeSharedResourceContainer) CppArgResourcesFreeing(paramName string, ctx *ProgpV8CodeGenerator) string {
+	return ""
+}
+
+func (m *TypeSharedResourceContainer) V8ToCppDecoder(ctx *ProgpV8CodeGenerator) string {
+	return ""
+}
+
+func (m *TypeSharedResourceContainer) ReturnTypeWrapper(ctx *ProgpV8CodeGenerator) string {
+	return ""
+}
+
+func (m *TypeSharedResourceContainer) ReturnTypeEncoder(ctx *ProgpV8CodeGenerator) string {
+	return ""
+}
+
+func (m *TypeSharedResourceContainer) CgoFunctionParamType(ctx *ProgpV8CodeGenerator) string {
+	return ""
+}
+
+func (m *TypeSharedResourceContainer) CgoToGoDecoding(paramName string, ctx *ProgpV8CodeGenerator) (string, string) {
+	return "", "getSharedResourceContainer(res.currentEvent.id)"
+}
+
+func (m *TypeSharedResourceContainer) GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string {
+	return ""
+}
+
+//endregion

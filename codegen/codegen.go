@@ -58,6 +58,7 @@ func NewProgpV8Codegen() *ProgpV8CodeGenerator {
 	typeMap["unsafe.Pointer"] = &TypeUnsafePointer{}
 	typeMap["progpAPI.ScriptFunction"] = &TypeV8Function{}
 	typeMap["*progpAPI.SharedResource"] = &TypeSharedResource{}
+	typeMap["*progpAPI.SharedResourceContainer"] = &TypeSharedResourceContainer{}
 	typeMap["progpAPI.StringBuffer"] = &TypeStringBuffer{}
 
 	//endregion
@@ -265,8 +266,6 @@ func (m *ProgpV8CodeGenerator) glueCodeCreateBindingFunctionsFor(fct *progpAPI.R
 		cppExtraBeforeCall += "\n    progp_IncreaseContextRef();\n    resWrapper.isAsync = true;"
 	}
 
-	hasEventParams := false
-
 	if len(fct.GoFunctionInfos.ParamTypes) != 0 {
 		cppAllParamsDecoding = ""
 		cppParamsCount := 0
@@ -286,8 +285,11 @@ func (m *ProgpV8CodeGenerator) glueCodeCreateBindingFunctionsFor(fct *progpAPI.R
 			}
 
 			asV8ValueDecoder := m.getType(paramType).V8ToCppDecoder(m)
+
 			if asV8ValueDecoder != "" {
-				cppCallParamsList += ", " + m.getType(paramType).CppToCgoParamCall(argName, m)
+				v := m.getType(paramType).CppToCgoParamCall(argName, m)
+
+				cppCallParamsList += ", " + v
 				cppAllParamsDecoding += "    " + asV8ValueDecoder + "(" + argName + ", " + strconv.Itoa(cppParamOffset) + ");\n"
 
 				cppParamsCount++
@@ -305,19 +307,11 @@ func (m *ProgpV8CodeGenerator) glueCodeCreateBindingFunctionsFor(fct *progpAPI.R
 			} else {
 				goCallParamsList += ", " + argName
 			}
-
-			if paramType == "*progpAPI.ExecutingEvent" {
-				hasEventParams = true
-			}
 		}
 
 		if cppParamsCount > 0 {
 			cppAllParamsDecoding = "    V8CALLARG_EXPECT_ARGCOUNT(" + strconv.Itoa(cppParamsCount) + ");\n" + cppAllParamsDecoding
 		}
-	}
-
-	if hasEventParams {
-		cppExtraBeforeCall += "\n    if (ctxPtr->eventData!=nullptr) resWrapper.eventDisposer = ctxPtr->eventData->disposer; else resWrapper.eventDisposer = nullptr;"
 	}
 
 	if cppExtraBeforeCall != "" {

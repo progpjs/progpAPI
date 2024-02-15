@@ -57,7 +57,7 @@ type ScriptEngine interface {
 	//
 	GetDefaultIsolate() ScriptIsolate
 
-	// CreateIsolate creates a new isolate which can be used
+	// CreateNewIsolate creates a new isolate which can be used
 	// to execute a new script isolated from the others scripts.
 	//
 	CreateNewIsolate(securityGroup string, isolateData any) ScriptIsolate
@@ -93,7 +93,7 @@ type ScriptFunction interface {
 	// CallAsEventFunction allows executing a function as an "event function".
 	// An even function is a function tracking his resources.
 	//
-	CallAsEventFunction(eventId int)
+	CallAsEventFunction()
 
 	// "2" means second argument.
 	// It's used for callback for first argument is error message.
