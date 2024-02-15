@@ -144,7 +144,7 @@ func (m *FunctionRegistry) GetAllFunctions(sortList bool) []*RegisteredFunction 
 			parts := strings.Split(key, "/")
 			key := path.Join(parts...)
 
-			libProgpScripts.SafeWriteFile(path.Join(targetDir, key)+".tsx", asBytes)
+			progpScripts.SafeWriteFile(path.Join(targetDir, key)+".tsx", asBytes)
 		}
 	}
 }*/
