@@ -402,7 +402,7 @@ func (m *TypeV8Function) CgoFunctionParamType(ctx *ProgpV8CodeGenerator) string 
 }
 
 func (m *TypeV8Function) CgoToGoDecoding(paramName string, ctx *ProgpV8CodeGenerator) (string, string) {
-	return "", "newV8Function(res.isAsync, " + paramName + ")"
+	return "", "newV8Function(res.isAsync, " + paramName + ", res.currentEvent)"
 }
 
 func (m *TypeV8Function) GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string {

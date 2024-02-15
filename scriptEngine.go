@@ -90,7 +90,12 @@ type ScriptFunction interface {
 	CallWithError(err error)
 	KeepAlive()
 
-	// 2 mean second argument.
+	// CallAsEventFunction allows executing a function as an "event function".
+	// An even function is a function tracking his resources.
+	//
+	CallAsEventFunction(eventId int)
+
+	// "2" means second argument.
 	// It's used for callback for first argument is error message.
 
 	CallWithArrayBuffer2(buffer []byte)

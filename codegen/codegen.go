@@ -338,10 +338,11 @@ func (m *ProgpV8CodeGenerator) glueCodeCreateBindingFunctionsFor(fct *progpAPI.R
 	template := `
 
 void v8Function_%FUNCTION_FULL_NAME%(const v8::FunctionCallbackInfo<v8::Value> &callInfo) {
-	PROGP_V8FUNCTION_BEFORE_V8CTX
+	PROGP_V8FUNCTION_BEFORE_PROGPCTX
 
 %PARAMS_DECODING%
 	%RETURN_TYPE_WRAPPER% resWrapper{};%EXTRA_BEFORE_CALL%
+	resWrapper.currentEvent = progpCtx->event;
 	progpCgoBinding__%FUNCTION_FULL_NAME%(%CALL_PARAMS_LIST%);
 	%FREE_RESOURCES%
     if (resWrapper.errorMessage!=nullptr) {
