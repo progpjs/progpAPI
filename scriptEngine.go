@@ -88,7 +88,7 @@ var gScriptFileExecutor ScriptFileExecutorF
 type ScriptFunction interface {
 	CallWithUndefined()
 	CallWithError(err error)
-	KeepAlive()
+	KeepAlive(iso ScriptIsolate)
 
 	// CallAsEventFunction allows executing a function as an "event function".
 	// An even function is a function tracking his resources.

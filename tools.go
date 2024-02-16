@@ -67,6 +67,7 @@ func NewTaskQueue() *TaskQueue {
 	}
 
 	SafeGoRoutine(func() { res.start() })
+
 	return res
 }
 
