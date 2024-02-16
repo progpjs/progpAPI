@@ -46,21 +46,10 @@ type ScriptEngine interface {
 	// It mainly occurs after a fatal error or at script ends.
 	Shutdown()
 
-	// IsMultiIsolateSupported returns true if the engine
-	// can use more than one isolate.
+	// CreateNewScriptContext creates a new context which can be used
+	// to execute a new script context from the others scripts.
 	//
-	IsMultiIsolateSupported() bool
-
-	// GetDefaultIsolate returns the main isolate.
-	// It's never nil here, unlike the CreateIsolate function
-	// which returns nil if the engine doesn't support using more than one isolate.
-	//
-	GetDefaultIsolate() ScriptIsolate
-
-	// CreateNewIsolate creates a new isolate which can be used
-	// to execute a new script isolated from the others scripts.
-	//
-	CreateNewIsolate(securityGroup string, isolateData any) ScriptIsolate
+	CreateNewScriptContext(securityGroup string) ScriptContext
 
 	// SetRuntimeErrorHandler allows to set a function which will manage runtime error.
 	// The handler runtime true if the error is handler or false
@@ -77,10 +66,10 @@ type ScriptEngine interface {
 	SetAllowedFunctionsChecker(handler CheckAllowedFunctionsF)
 }
 
-type RuntimeErrorHandlerF func(iso ScriptIsolate, err *ScriptErrorMessage) bool
-type ScriptTerminatedHandlerF func(iso ScriptIsolate, scriptPath string, err *ScriptErrorMessage) *ScriptErrorMessage
+type RuntimeErrorHandlerF func(ctx ScriptContext, err *ScriptErrorMessage) bool
+type ScriptTerminatedHandlerF func(ctx ScriptContext, scriptPath string, err *ScriptErrorMessage) *ScriptErrorMessage
 type ScriptCallbackF func(error *ScriptErrorMessage)
-type ScriptFileExecutorF func(so ScriptIsolate, scriptPath string) *ScriptErrorMessage
+type ScriptFileExecutorF func(ctx ScriptContext, scriptPath string) *ScriptErrorMessage
 type CheckAllowedFunctionsF func(securityGroup string, functionGroup string, functionName string) bool
 
 var gScriptFileExecutor ScriptFileExecutorF
@@ -116,25 +105,25 @@ type ScriptFunction interface {
 	CallWithResource2(value *SharedResource)
 }
 
-type ScriptIsolate interface {
+type ScriptContext interface {
 	GetScriptEngine() ScriptEngine
 
-	// GetSecurityGroup returns a group name which allows knowing the category of this isolate.
+	// GetSecurityGroup returns a group name which allows knowing the category of this context.
 	// It's mainly used to allows / don't allow access to some functions groups.
 	// For exemple you can use security group "unsafe" then the script will no be able to access to Go functions.
 	//
 	GetSecurityGroup() string
 
-	// ExecuteScript executes a script inside this isolate.
+	// ExecuteScript executes a script inside this context.
 	// It must be used once and don't allow executing more than one script.
 	ExecuteScript(scriptContent string, compiledFilePath string, sourceScriptPath string) *ScriptErrorMessage
 
 	// ExecuteScriptFile is like ExecuteScript but allows using a file (which can be typescript).
-	ExecuteScriptFile(iso ScriptIsolate, scriptPath string) *ScriptErrorMessage
+	ExecuteScriptFile(ctx ScriptContext, scriptPath string) *ScriptErrorMessage
 
-	// TryDispose destroy the isolate and free his resources.
-	// It's do nothing if this isolate can't be disposed, for
-	// exemple if the engine only support one isole.
+	// TryDispose destroy the context and free his resources.
+	// It's do nothing if this context can't be disposed, for
+	// exemple if the engine only support one context.
 	//
 	TryDispose() bool
 
@@ -142,12 +131,12 @@ type ScriptIsolate interface {
 	// The error params allows to avoid case where a new error occurs since.
 	DisarmError(error *ScriptErrorMessage)
 
-	// IncreaseRefCount increase the ref counter for the isolate.
+	// IncreaseRefCount increase the ref counter for the context.
 	// This avoid that the script exit, which is required the system is
 	// keeping reference on some javascript functions.
 	IncreaseRefCount()
 
-	// DecreaseRefCount decrease the ref counter for the isolate.
+	// DecreaseRefCount decrease the ref counter for the context.
 	DecreaseRefCount()
 }
 

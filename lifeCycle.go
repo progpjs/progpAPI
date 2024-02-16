@@ -26,7 +26,7 @@ import (
 //region ScriptErrorMessage
 
 type ScriptErrorMessage struct {
-	scriptIsolate ScriptIsolate
+	scriptContext ScriptContext
 
 	isTranslated bool
 	isLogged     bool
@@ -48,12 +48,12 @@ type ScriptErrorMessage struct {
 	StackTraceFrames     []StackTraceFrame
 }
 
-func NewScriptErrorMessage(iso ScriptIsolate) *ScriptErrorMessage {
-	return &ScriptErrorMessage{scriptIsolate: iso}
+func NewScriptErrorMessage(ctx ScriptContext) *ScriptErrorMessage {
+	return &ScriptErrorMessage{scriptContext: ctx}
 }
 
-func (m *ScriptErrorMessage) GetScriptIsolate() ScriptIsolate {
-	return m.scriptIsolate
+func (m *ScriptErrorMessage) GetScriptContext() ScriptContext {
+	return m.scriptContext
 }
 
 type StackTraceFrame struct {
@@ -109,15 +109,15 @@ func (m *ScriptErrorMessage) LogError() {
 }
 
 // DisarmError allows to continue after an un-catch error.
-func (m *ScriptErrorMessage) DisarmError(isolate ScriptIsolate) {
-	isolate.DisarmError(m)
+func (m *ScriptErrorMessage) DisarmError(ctx ScriptContext) {
+	ctx.DisarmError(m)
 }
 
 //endregion
 
 func OnUnCatchScriptError(error *ScriptErrorMessage) {
 	error.LogError()
-	error.scriptIsolate.GetScriptEngine().Shutdown()
+	error.scriptContext.GetScriptEngine().Shutdown()
 }
 
 func SetErrorTranslator(handler ErrorTranslatorF) {

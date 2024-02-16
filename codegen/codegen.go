@@ -263,7 +263,7 @@ func (m *ProgpV8CodeGenerator) glueCodeCreateBindingFunctionsFor(fct *progpAPI.R
 	returnTypeEncoder := m.getType(fct.GoFunctionInfos.ReturnType).ReturnTypeEncoder(m)
 
 	if fct.IsAsync {
-		cppExtraBeforeCall += "\n    progp_IncreaseContextRef();\n    resWrapper.isAsync = true;"
+		cppExtraBeforeCall += "\n    progp_IncreaseContextRef(progpCtx);\n    resWrapper.isAsync = true;"
 	}
 
 	if len(fct.GoFunctionInfos.ParamTypes) != 0 {

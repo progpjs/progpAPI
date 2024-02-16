@@ -63,7 +63,7 @@ func (m *SharedResource) Dispose() {
 //region SharedResourceContainer
 
 type SharedResourceContainer struct {
-	scriptIsolate ScriptIsolate
+	scriptContext ScriptContext
 
 	nextResourceId int
 	resourceMap    map[int]*SharedResource
@@ -76,12 +76,12 @@ type SharedResourceContainer struct {
 	childContainersMutex sync.Mutex
 }
 
-func NewSharedResourceContainer(parent *SharedResourceContainer, iso ScriptIsolate) *SharedResourceContainer {
-	if (iso == nil) && (parent != nil) {
-		iso = parent.scriptIsolate
+func NewSharedResourceContainer(parent *SharedResourceContainer, ctx ScriptContext) *SharedResourceContainer {
+	if (ctx == nil) && (parent != nil) {
+		ctx = parent.scriptContext
 	}
 
-	m := &SharedResourceContainer{resourceMap: make(map[int]*SharedResource), scriptIsolate: iso}
+	m := &SharedResourceContainer{resourceMap: make(map[int]*SharedResource), scriptContext: ctx}
 
 	if parent != nil {
 		parent.saveChildContainer(m)
@@ -181,8 +181,8 @@ func (m *SharedResourceContainer) compactResourceId() int {
 	return maxId
 }
 
-func (m *SharedResourceContainer) GetIsolate() ScriptIsolate {
-	return m.scriptIsolate
+func (m *SharedResourceContainer) GetScriptContext() ScriptContext {
+	return m.scriptContext
 }
 
 func (m *SharedResourceContainer) saveChildContainer(child *SharedResourceContainer) {
