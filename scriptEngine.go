@@ -88,7 +88,11 @@ var gScriptFileExecutor ScriptFileExecutorF
 type ScriptFunction interface {
 	CallWithUndefined()
 	CallWithError(err error)
-	KeepAlive(iso ScriptIsolate)
+
+	// KeepAlive allows to avoid destroying the function after the first call.
+	// It must be used when you keep a reference to a function.
+	//
+	KeepAlive()
 
 	// CallAsEventFunction allows executing a function as an "event function".
 	// An even function is a function tracking his resources.
