@@ -442,7 +442,7 @@ func (m *TypeSharedResource) CgoFunctionParamType(ctx *ProgpV8CodeGenerator) str
 
 func (m *TypeSharedResource) CgoToGoDecoding(paramName string, ctx *ProgpV8CodeGenerator) (string, string) {
 	ctx.AddNamespace("github.com/progpjs/progpAPI")
-	return "", "resolveSharedResource(res.event.id, int(" + paramName + "))"
+	return "", "resolveSharedResourceFromDouble(res.currentEvent.id, " + paramName + ")"
 }
 
 func (m *TypeSharedResource) GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string {
@@ -481,7 +481,7 @@ func (m *TypeSharedResourceContainer) CgoFunctionParamType(ctx *ProgpV8CodeGener
 }
 
 func (m *TypeSharedResourceContainer) CgoToGoDecoding(paramName string, ctx *ProgpV8CodeGenerator) (string, string) {
-	return "", "getSharedResourceContainer(res.currentEvent.id)"
+	return "", "getSharedResourceContainerFromUIntPtr(res.currentEvent.id)"
 }
 
 func (m *TypeSharedResourceContainer) GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string {
