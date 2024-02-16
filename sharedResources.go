@@ -39,6 +39,14 @@ func (m *SharedResource) GetId() int {
 }
 
 func (m *SharedResource) Dispose() {
+	// Go allows calling a function on nil.
+	// It's a good thing because it allows the caller to avoid
+	// checking if the resource is nil, which generally mean it's already disposed.
+	//
+	if m == nil {
+		return
+	}
+
 	if m.group != nil {
 		og := m.group
 		m.group = nil
@@ -69,6 +77,10 @@ type SharedResourceContainer struct {
 }
 
 func NewSharedResourceContainer(parent *SharedResourceContainer, iso ScriptIsolate) *SharedResourceContainer {
+	if (iso == nil) && (parent != nil) {
+		iso = parent.scriptIsolate
+	}
+
 	m := &SharedResourceContainer{resourceMap: make(map[int]*SharedResource), scriptIsolate: iso}
 
 	if parent != nil {

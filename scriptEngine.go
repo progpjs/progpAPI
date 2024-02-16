@@ -87,6 +87,7 @@ var gScriptFileExecutor ScriptFileExecutorF
 
 type ScriptFunction interface {
 	CallWithUndefined()
+
 	CallWithError(err error)
 
 	// KeepAlive allows to avoid destroying the function after the first call.
@@ -94,10 +95,14 @@ type ScriptFunction interface {
 	//
 	KeepAlive()
 
-	// CallAsEventFunction allows executing a function as an "event function".
-	// An even function is a function tracking his resources.
+	// EnabledResourcesAutoDisposing allows the engine to automatically dispose the resources created while
+	// calling this function. Without that you must call progpDispose on each disposable resources.
+	// Here no, when activating this flag the engine release all the resource one the function call ends.
+	// This includes all the async functions launched from this function and not only the main body of the function.
 	//
-	CallAsEventFunction()
+	// If you are interested in this functionality, you can use the javascript function progpAutoDispose(() => { ... })
+	//
+	EnabledResourcesAutoDisposing(currentResourceContainer *SharedResourceContainer)
 
 	// "2" means second argument.
 	// It's used for callback for first argument is error message.
