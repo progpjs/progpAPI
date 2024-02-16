@@ -132,6 +132,14 @@ type ScriptIsolate interface {
 	// DisarmError remove the current error and allows continuing execution.
 	// The error params allows to avoid case where a new error occurs since.
 	DisarmError(error *ScriptErrorMessage)
+
+	// IncreaseRefCount increase the ref counter for the isolate.
+	// This avoid that the script exit, which is required the system is
+	// keeping reference on some javascript functions.
+	IncreaseRefCount()
+
+	// DecreaseRefCount decrease the ref counter for the isolate.
+	DecreaseRefCount()
 }
 
 func GetScriptFileExecutor() ScriptFileExecutorF {

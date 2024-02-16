@@ -18,7 +18,6 @@ package progpAPI
 
 import (
 	"runtime"
-	"sync"
 )
 
 //region SharedResource
@@ -55,18 +54,19 @@ func (m *SharedResource) Dispose() {
 //region SharedResourceContainer
 
 type SharedResourceContainer struct {
-	mutex               sync.RWMutex
-	ptrMap              map[int]*SharedResource
-	childContainerHead  *SharedResourceContainer
-	childContainerMutex sync.Mutex
+	nextResourceId     int
+	ptrMap             map[int]*SharedResource
+	childContainerHead *SharedResourceContainer
 
-	parent   *SharedResourceContainer
-	next     *SharedResourceContainer
-	previous *SharedResourceContainer
+	parent        *SharedResourceContainer
+	next          *SharedResourceContainer
+	previous      *SharedResourceContainer
+	scriptIsolate ScriptIsolate
 }
 
-func NewSharedResourceContainer(parent *SharedResourceContainer) *SharedResourceContainer {
-	m := &SharedResourceContainer{ptrMap: make(map[int]*SharedResource)}
+func NewSharedResourceContainer(parent *SharedResourceContainer, iso ScriptIsolate) *SharedResourceContainer {
+	m := &SharedResourceContainer{ptrMap: make(map[int]*SharedResource), scriptIsolate: iso}
+
 	if parent != nil {
 		parent.saveChildContainer(m)
 	}
@@ -78,12 +78,29 @@ func (m *SharedResourceContainer) Dispose() {
 	if m.parent != nil {
 		m.parent.unSaveChildContainer(m)
 	}
+
+	for _, res := range m.ptrMap {
+		res.Dispose()
+	}
+}
+
+func (m *SharedResourceContainer) GetResource(resId int) *SharedResource {
+	return m.ptrMap[resId]
+}
+
+func (m *SharedResourceContainer) NewSharedResource(value any, onDispose DisposeSharedResourceF) *SharedResource {
+	id := m.nextResourceId
+	m.nextResourceId++
+	res := newSharedResource(id, value, onDispose)
+	m.saveResource(id, res)
+	return res
+}
+
+func (m *SharedResourceContainer) GetIsolate() ScriptIsolate {
+	return m.scriptIsolate
 }
 
 func (m *SharedResourceContainer) saveChildContainer(child *SharedResourceContainer) {
-	m.childContainerMutex.Lock()
-	defer m.childContainerMutex.Unlock()
-
 	child.parent = m
 	child.next = m.childContainerHead
 	m.childContainerHead = child
@@ -94,9 +111,6 @@ func (m *SharedResourceContainer) saveChildContainer(child *SharedResourceContai
 }
 
 func (m *SharedResourceContainer) unSaveChildContainer(child *SharedResourceContainer) {
-	m.childContainerMutex.Lock()
-	defer m.childContainerMutex.Unlock()
-
 	if m.childContainerHead == child {
 		m.childContainerHead = child.next
 	}
@@ -111,56 +125,20 @@ func (m *SharedResourceContainer) unSaveChildContainer(child *SharedResourceCont
 }
 
 func (m *SharedResourceContainer) unSaveResource(res *SharedResource) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
 	delete(m.ptrMap, res.id)
 }
 
 func (m *SharedResourceContainer) saveResource(id int, res *SharedResource) {
 	res.group = m
-
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
 	m.ptrMap[id] = res
 }
 
 //endregion
 
-func GetSharedResource(id int) *SharedResource {
-	idGroup := id % 10
-	group := gSharedResourceContainers[idGroup]
-
-	group.mutex.RLock()
-	defer group.mutex.RUnlock()
-	return group.ptrMap[id]
-}
-
-func NewSharedResource(value any, onDispose DisposeSharedResourceF) *SharedResource {
-	gSharedResourceNextIdMutex.Lock()
-	id := gSharedResourceNextId
-	gSharedResourceNextId++
-	gSharedResourceNextIdMutex.Unlock()
-
+func newSharedResource(id int, value any, onDispose DisposeSharedResourceF) *SharedResource {
 	m := &SharedResource{id: id, Value: value, onDispose: onDispose}
 	runtime.SetFinalizer(m, (*SharedResource).finalizer)
-
-	idGroup := id % 10
-	group := gSharedResourceContainers[idGroup]
-	group.saveResource(id, m)
-
 	return m
 }
 
 type DisposeSharedResourceF func(value any)
-
-var gSharedResourceContainers []*SharedResourceContainer
-var gSharedResourceNextId = 1
-var gSharedResourceNextIdMutex = sync.Mutex{}
-
-func init() {
-	gSharedResourceContainers = make([]*SharedResourceContainer, 10)
-
-	for i := 0; i < 10; i++ {
-		gSharedResourceContainers[i] = NewSharedResourceContainer(nil)
-	}
-}
