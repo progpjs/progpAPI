@@ -59,7 +59,7 @@ type SharedResourceContainer struct {
 
 	nextResourceId int
 	resourceMap    map[int]*SharedResource
-	resourcesMutex sync.Mutex
+	resourcesMutex sync.RWMutex
 
 	parentContainer      *SharedResourceContainer
 	nextContainer        *SharedResourceContainer
@@ -89,14 +89,15 @@ func (m *SharedResourceContainer) Dispose() {
 }
 
 func (m *SharedResourceContainer) GetResource(resId int) *SharedResource {
-	m.resourcesMutex.Lock()
+	m.resourcesMutex.RLock()
 	r := m.resourceMap[resId]
-	m.resourcesMutex.Unlock()
+	m.resourcesMutex.RUnlock()
 	return r
 }
 
 func (m *SharedResourceContainer) NewSharedResource(value any, onDispose DisposeSharedResourceF) *SharedResource {
-	res := newSharedResource(value, onDispose)
+	res := &SharedResource{Value: value, onDispose: onDispose}
+	runtime.SetFinalizer(res, (*SharedResource).finalizer)
 
 	m.resourcesMutex.Lock()
 	id := m.nextResourceId
@@ -106,6 +107,7 @@ func (m *SharedResourceContainer) NewSharedResource(value any, onDispose Dispose
 
 	res.group = m
 	res.id = id
+
 	return res
 }
 
@@ -153,7 +155,13 @@ func (m *SharedResourceContainer) unSaveResource(res *SharedResource) {
 
 func newSharedResource(value any, onDispose DisposeSharedResourceF) *SharedResource {
 	m := &SharedResource{Value: value, onDispose: onDispose}
-	runtime.SetFinalizer(m, (*SharedResource).finalizer)
+
+	// Make things way faster when dealing with self-managed resources.
+	//
+	if onDispose != nil {
+		runtime.SetFinalizer(m, (*SharedResource).finalizer)
+	}
+
 	return m
 }
 
