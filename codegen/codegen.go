@@ -230,7 +230,7 @@ func (m *ProgpV8CodeGenerator) saveFileIfNotTheSame(filePath string, newContent 
 }
 
 func (m *ProgpV8CodeGenerator) createGroupFunctions() {
-	toInject := "\n\nvoid exposeGoFunctionsToV8(const std::string& group, v8::Local<v8::Object> v8Host) {"
+	toInject := "\n\nvoid exposeGoFunctionsToV8(ProgpContext progpCtx, const std::string& group, v8::Local<v8::Object> v8Host) {"
 
 	for _, f := range m.functionList {
 		template := "\n    PROGP_BIND_FUNCTION(\"%FUNCTION_GROUP%\", \"%FUNCTION_NAME%\", (f_progp_v8_function)v8Function_%FUNCTION_FULL_NAME%);"
