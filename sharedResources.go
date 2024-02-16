@@ -99,8 +99,24 @@ func (m *SharedResourceContainer) NewSharedResource(value any, onDispose Dispose
 	res := &SharedResource{Value: value, onDispose: onDispose}
 	runtime.SetFinalizer(res, (*SharedResource).finalizer)
 
+	// Warning: resources are stored as a double in v8 side
+	// doing that we can send a memory pointer, which can
+	// exceed the size of a double. We don't use v8::external
+	// the reason being than his memory isn't freed in the same
+	// GC cycles doing that the memory can saturate in high load.
+
 	m.resourcesMutex.Lock()
 	id := m.nextResourceId
+
+	if id > MaxResourceIdSize {
+		m.resourcesMutex.Unlock()
+
+		// This allows avoiding using too big integer
+		// and going over double to int conversion capacity.
+		//
+		id = m.compactResourceId()
+	}
+
 	m.nextResourceId++
 	m.resourceMap[id] = res
 	m.resourcesMutex.Unlock()
@@ -109,6 +125,48 @@ func (m *SharedResourceContainer) NewSharedResource(value any, onDispose Dispose
 	res.id = id
 
 	return res
+}
+
+const MaxResourceIdSize = 2147483647
+
+var gCompactingMutex sync.Mutex
+
+func (m *SharedResourceContainer) compactResourceId() int {
+	gCompactingMutex.Lock()
+	defer gCompactingMutex.Unlock()
+
+	// Called by function while was in pause?
+	if m.nextResourceId <= MaxResourceIdSize {
+		m.resourcesMutex.Lock()
+		return m.nextResourceId
+	}
+
+	// The pause isn't include in the caller lock,
+	// which allows to free the current resources
+	// while this pause is executing.
+	//
+	PauseMs(100)
+
+	// We lock but we will not unlock
+	// in order to let the caller use the lock
+	// when exiting this function.
+	//
+	m.resourcesMutex.Lock()
+
+	maxId := 0
+
+	for key, _ := range m.resourceMap {
+		if key > maxId {
+			maxId = key
+		}
+	}
+
+	maxId++
+
+	println("Max id was ", m.nextResourceId, " and is now ", maxId)
+	m.nextResourceId = maxId
+
+	return maxId
 }
 
 func (m *SharedResourceContainer) GetIsolate() ScriptIsolate {
