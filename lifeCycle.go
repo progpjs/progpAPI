@@ -203,7 +203,9 @@ func ForceExitingVM() {
 // WaitTasksEnd wait until all background tasks are finished.
 // It's used in order to know if the application can exit.
 func WaitTasksEnd() {
-	<-gBackgroundTasksWaitChannel
+	if gBackgroundTasksWaitChannel != nil {
+		<-gBackgroundTasksWaitChannel
+	}
 }
 
 //endregion
