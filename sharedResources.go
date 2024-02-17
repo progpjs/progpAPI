@@ -63,7 +63,7 @@ func (m *SharedResource) Dispose() {
 //region SharedResourceContainer
 
 type SharedResourceContainer struct {
-	scriptContext ScriptContext
+	scriptContext JsContext
 	isDisposed    bool
 
 	nextResourceId int
@@ -77,7 +77,7 @@ type SharedResourceContainer struct {
 	childContainersMutex sync.Mutex
 }
 
-func NewSharedResourceContainer(parent *SharedResourceContainer, ctx ScriptContext) *SharedResourceContainer {
+func NewSharedResourceContainer(parent *SharedResourceContainer, ctx JsContext) *SharedResourceContainer {
 	if (ctx == nil) && (parent != nil) {
 		ctx = parent.scriptContext
 	}
@@ -187,7 +187,7 @@ func (m *SharedResourceContainer) compactResourceId() int {
 	return maxId
 }
 
-func (m *SharedResourceContainer) GetScriptContext() ScriptContext {
+func (m *SharedResourceContainer) GetScriptContext() JsContext {
 	return m.scriptContext
 }
 

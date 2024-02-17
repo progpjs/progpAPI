@@ -25,8 +25,8 @@ import (
 
 //region ScriptErrorMessage
 
-type ScriptErrorMessage struct {
-	scriptContext ScriptContext
+type JsErrorMessage struct {
+	scriptContext JsContext
 
 	isTranslated bool
 	isLogged     bool
@@ -48,11 +48,11 @@ type ScriptErrorMessage struct {
 	StackTraceFrames     []StackTraceFrame
 }
 
-func NewScriptErrorMessage(ctx ScriptContext) *ScriptErrorMessage {
-	return &ScriptErrorMessage{scriptContext: ctx}
+func NewScriptErrorMessage(ctx JsContext) *JsErrorMessage {
+	return &JsErrorMessage{scriptContext: ctx}
 }
 
-func (m *ScriptErrorMessage) GetScriptContext() ScriptContext {
+func (m *JsErrorMessage) GetScriptContext() JsContext {
 	return m.scriptContext
 }
 
@@ -63,7 +63,7 @@ type StackTraceFrame struct {
 	Source   string
 }
 
-func (m *ScriptErrorMessage) Translate() {
+func (m *JsErrorMessage) Translate() {
 	if m.isTranslated {
 		return
 	}
@@ -74,7 +74,7 @@ func (m *ScriptErrorMessage) Translate() {
 	}
 }
 
-func (m *ScriptErrorMessage) StackTrace() string {
+func (m *JsErrorMessage) StackTrace() string {
 	m.Translate()
 	res := ""
 
@@ -89,7 +89,7 @@ func (m *ScriptErrorMessage) StackTrace() string {
 	return res
 }
 
-func (m *ScriptErrorMessage) Print(forcePrinting bool) {
+func (m *JsErrorMessage) Print(forcePrinting bool) {
 	if m.isPrinted && !forcePrinting {
 		return
 	}
@@ -100,7 +100,7 @@ func (m *ScriptErrorMessage) Print(forcePrinting bool) {
 	print(m.StackTrace())
 }
 
-func (m *ScriptErrorMessage) LogError() {
+func (m *JsErrorMessage) LogError() {
 	if (m == nil) || m.isLogged {
 		return
 	}
@@ -109,13 +109,13 @@ func (m *ScriptErrorMessage) LogError() {
 }
 
 // DisarmError allows to continue after an un-catch error.
-func (m *ScriptErrorMessage) DisarmError(ctx ScriptContext) {
+func (m *JsErrorMessage) DisarmError(ctx JsContext) {
 	ctx.DisarmError(m)
 }
 
 //endregion
 
-func OnUnCatchScriptError(error *ScriptErrorMessage) {
+func OnUnCatchScriptError(error *JsErrorMessage) {
 	error.LogError()
 	error.scriptContext.GetScriptEngine().Shutdown()
 }
@@ -124,7 +124,7 @@ func SetErrorTranslator(handler ErrorTranslatorF) {
 	gErrorTranslator = handler
 }
 
-type ErrorTranslatorF func(error *ScriptErrorMessage)
+type ErrorTranslatorF func(error *JsErrorMessage)
 
 var gErrorTranslator ErrorTranslatorF
 
@@ -133,7 +133,7 @@ var gErrorTranslator ErrorTranslatorF
 //region ScriptExecResult
 
 type ScriptExecResult struct {
-	ScriptError *ScriptErrorMessage
+	ScriptError *JsErrorMessage
 	GoError     error
 }
 

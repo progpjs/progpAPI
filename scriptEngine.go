@@ -49,7 +49,7 @@ type ScriptEngine interface {
 	// CreateNewScriptContext creates a new context which can be used
 	// to execute a new script context from the others scripts.
 	//
-	CreateNewScriptContext(securityGroup string) ScriptContext
+	CreateNewScriptContext(securityGroup string, mustDebug bool) JsContext
 
 	// SetRuntimeErrorHandler allows to set a function which will manage runtime error.
 	// The handler runtime true if the error is handler or false
@@ -66,15 +66,15 @@ type ScriptEngine interface {
 	SetAllowedFunctionsChecker(handler CheckAllowedFunctionsF)
 }
 
-type RuntimeErrorHandlerF func(ctx ScriptContext, err *ScriptErrorMessage) bool
-type ScriptTerminatedHandlerF func(ctx ScriptContext, scriptPath string, err *ScriptErrorMessage) *ScriptErrorMessage
-type ScriptCallbackF func(error *ScriptErrorMessage)
-type ScriptFileExecutorF func(ctx ScriptContext, scriptPath string) *ScriptErrorMessage
+type RuntimeErrorHandlerF func(ctx JsContext, err *JsErrorMessage) bool
+type ScriptTerminatedHandlerF func(ctx JsContext, scriptPath string, err *JsErrorMessage) *JsErrorMessage
+type ScriptCallbackF func(error *JsErrorMessage)
+type ScriptFileExecutorF func(ctx JsContext, scriptPath string) *JsErrorMessage
 type CheckAllowedFunctionsF func(securityGroup string, functionGroup string, functionName string) bool
 
 var gScriptFileExecutor ScriptFileExecutorF
 
-type ScriptFunction interface {
+type JsFunction interface {
 	CallWithUndefined()
 
 	CallWithError(err error)
@@ -105,7 +105,7 @@ type ScriptFunction interface {
 	CallWithResource2(value *SharedResource)
 }
 
-type ScriptContext interface {
+type JsContext interface {
 	GetScriptEngine() ScriptEngine
 
 	// GetSecurityGroup returns a group name which allows knowing the category of this context.
@@ -116,10 +116,10 @@ type ScriptContext interface {
 
 	// ExecuteScript executes a script inside this context.
 	// It must be used once and don't allow executing more than one script.
-	ExecuteScript(scriptContent string, compiledFilePath string, sourceScriptPath string) *ScriptErrorMessage
+	ExecuteScript(scriptContent string, compiledFilePath string, sourceScriptPath string) *JsErrorMessage
 
 	// ExecuteScriptFile is like ExecuteScript but allows using a file (which can be typescript).
-	ExecuteScriptFile(scriptPath string) *ScriptErrorMessage
+	ExecuteScriptFile(scriptPath string) *JsErrorMessage
 
 	// TryDispose destroy the context and free his resources.
 	// It's do nothing if this context can't be disposed, for
@@ -129,10 +129,10 @@ type ScriptContext interface {
 
 	// DisarmError remove the current error and allows continuing execution.
 	// The error params allows to avoid case where a new error occurs since.
-	DisarmError(error *ScriptErrorMessage)
+	DisarmError(error *JsErrorMessage)
 
 	// IncreaseRefCount increase the ref counter for the context.
-	// This avoid that the script exit, which is required the system is
+	// This avoids that the script exit, which is required the system is
 	// keeping reference on some javascript functions.
 	IncreaseRefCount()
 
