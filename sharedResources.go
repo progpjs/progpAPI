@@ -64,6 +64,7 @@ func (m *SharedResource) Dispose() {
 
 type SharedResourceContainer struct {
 	scriptContext ScriptContext
+	isDisposed    bool
 
 	nextResourceId int
 	resourceMap    map[int]*SharedResource
@@ -91,6 +92,11 @@ func NewSharedResourceContainer(parent *SharedResourceContainer, ctx ScriptConte
 }
 
 func (m *SharedResourceContainer) Dispose() {
+	if m.isDisposed {
+		return
+	}
+	m.isDisposed = true
+
 	if m.parentContainer != nil {
 		m.parentContainer.unSaveChildContainer(m)
 	}

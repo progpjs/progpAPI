@@ -171,21 +171,29 @@ func DeclareBackgroundTaskStarted() {
 
 func DeclareBackgroundTaskEnded() {
 	gBackgroundTasksCountMutex.Lock()
+	defer gBackgroundTasksCountMutex.Unlock()
+
 	if gBackgroundTasksCount != 0 {
 		gBackgroundTasksCount--
 	}
-	gBackgroundTasksCountMutex.Unlock()
 
 	if gBackgroundTasksCount == 0 {
 		close(gBackgroundTasksWaitChannel)
+		gBackgroundTasksWaitChannel = nil
 	}
 }
 
 // ForceExitingVM allows stopping the process without doing an os.exit.
 // It's a requirement if profiling the memory, since without that, the log file isn't correctly flushed.
 func ForceExitingVM() {
+	gBackgroundTasksCountMutex.Lock()
+	defer gBackgroundTasksCountMutex.Unlock()
+
 	gBackgroundTasksCount = 0
-	close(gBackgroundTasksWaitChannel)
+
+	if gBackgroundTasksWaitChannel != nil {
+		close(gBackgroundTasksWaitChannel)
+	}
 
 	ForEachScriptEngine(func(e ScriptEngine) {
 		e.Shutdown()

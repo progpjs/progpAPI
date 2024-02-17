@@ -119,7 +119,7 @@ type ScriptContext interface {
 	ExecuteScript(scriptContent string, compiledFilePath string, sourceScriptPath string) *ScriptErrorMessage
 
 	// ExecuteScriptFile is like ExecuteScript but allows using a file (which can be typescript).
-	ExecuteScriptFile(ctx ScriptContext, scriptPath string) *ScriptErrorMessage
+	ExecuteScriptFile(scriptPath string) *ScriptErrorMessage
 
 	// TryDispose destroy the context and free his resources.
 	// It's do nothing if this context can't be disposed, for
