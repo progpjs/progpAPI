@@ -372,40 +372,40 @@ func (m *TypeUnsafePointer) GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string 
 
 //endregion
 
-//region progpAPI.ScriptFunction
+//region progpAPI.JsFunction
 
-type TypeV8Function struct {
+type TypeJsFunction struct {
 }
 
-func (m *TypeV8Function) CppToCgoParamCall(paramName string, ctx *ProgpV8CodeGenerator) string {
+func (m *TypeJsFunction) CppToCgoParamCall(paramName string, ctx *ProgpV8CodeGenerator) string {
 	return paramName
 }
 
-func (m *TypeV8Function) CppArgResourcesFreeing(paramName string, ctx *ProgpV8CodeGenerator) string {
+func (m *TypeJsFunction) CppArgResourcesFreeing(paramName string, ctx *ProgpV8CodeGenerator) string {
 	return ""
 }
 
-func (m *TypeV8Function) V8ToCppDecoder(ctx *ProgpV8CodeGenerator) string {
+func (m *TypeJsFunction) V8ToCppDecoder(ctx *ProgpV8CodeGenerator) string {
 	return "V8CALLARG_EXPECT_FUNCTION"
 }
 
-func (m *TypeV8Function) ReturnTypeWrapper(ctx *ProgpV8CodeGenerator) string {
+func (m *TypeJsFunction) ReturnTypeWrapper(ctx *ProgpV8CodeGenerator) string {
 	return ""
 }
 
-func (m *TypeV8Function) ReturnTypeEncoder(ctx *ProgpV8CodeGenerator) string {
+func (m *TypeJsFunction) ReturnTypeEncoder(ctx *ProgpV8CodeGenerator) string {
 	return ""
 }
 
-func (m *TypeV8Function) CgoFunctionParamType(ctx *ProgpV8CodeGenerator) string {
+func (m *TypeJsFunction) CgoFunctionParamType(ctx *ProgpV8CodeGenerator) string {
 	return "C.ProgpV8FunctionPtr"
 }
 
-func (m *TypeV8Function) CgoToGoDecoding(paramName string, ctx *ProgpV8CodeGenerator) (string, string) {
+func (m *TypeJsFunction) CgoToGoDecoding(paramName string, ctx *ProgpV8CodeGenerator) (string, string) {
 	return "", "newV8Function(res.isAsync, " + paramName + ", res.currentEvent)"
 }
 
-func (m *TypeV8Function) GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string {
+func (m *TypeJsFunction) GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string {
 	return ""
 }
 

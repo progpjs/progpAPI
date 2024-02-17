@@ -56,7 +56,7 @@ func NewProgpV8Codegen() *ProgpV8CodeGenerator {
 	typeMap["string"] = &TypeString{}
 	typeMap["[]uint8"] = &TypeUIntArray{}
 	typeMap["unsafe.Pointer"] = &TypeUnsafePointer{}
-	typeMap["progpAPI.ScriptFunction"] = &TypeV8Function{}
+	typeMap["progpAPI.JsFunction"] = &TypeJsFunction{}
 	typeMap["*progpAPI.SharedResource"] = &TypeSharedResource{}
 	typeMap["*progpAPI.SharedResourceContainer"] = &TypeSharedResourceContainer{}
 	typeMap["progpAPI.StringBuffer"] = &TypeStringBuffer{}
