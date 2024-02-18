@@ -82,10 +82,12 @@ func (m *ProgpV8CodeGenerator) GenerateCode(autoUpdateDir string) {
 
 	if state, err := os.Stat(autoUpdateDir); err == nil {
 		if !state.IsDir() {
-			return
+			println("Error, directory ", autoUpdateDir, " isn't a valid directory")
+			os.Exit(1)
 		}
 	} else {
-		return
+		println("Error, directory ", autoUpdateDir, " isn't a valid directory")
+		os.Exit(1)
 	}
 
 	m.outputDir = autoUpdateDir
