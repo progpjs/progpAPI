@@ -70,9 +70,11 @@ type RuntimeErrorHandlerF func(ctx JsContext, err *JsErrorMessage) bool
 type ScriptTerminatedHandlerF func(ctx JsContext, scriptPath string, err *JsErrorMessage) *JsErrorMessage
 type ScriptCallbackF func(error *JsErrorMessage)
 type ScriptFileExecutorF func(ctx JsContext, scriptPath string) *JsErrorMessage
+type ScriptFileCompilerF func(scriptPath string) (string, string, error)
 type CheckAllowedFunctionsF func(securityGroup string, functionGroup string, functionName string) bool
 
 var gScriptFileExecutor ScriptFileExecutorF
+var getScriptFileCompiler ScriptFileCompilerF
 
 type JsFunction interface {
 	CallWithUndefined()
@@ -121,6 +123,9 @@ type JsContext interface {
 	// ExecuteScriptFile is like ExecuteScript but allows using a file (which can be typescript).
 	ExecuteScriptFile(scriptPath string) *JsErrorMessage
 
+	// ExecuteChildScriptFile execute a script from the inside of another script.
+	ExecuteChildScriptFile(scriptPath string) error
+
 	// TryDispose destroy the context and free his resources.
 	// It's do nothing if this context can't be disposed, for
 	// exemple if the engine only support one context.
@@ -144,8 +149,16 @@ func GetScriptFileExecutor() ScriptFileExecutorF {
 	return gScriptFileExecutor
 }
 
+func GetScriptFileCompiler() ScriptFileCompilerF {
+	return getScriptFileCompiler
+}
+
 func SetScriptFileExecutor(executor ScriptFileExecutorF) {
 	gScriptFileExecutor = executor
+}
+
+func SetScriptFileCompiler(compiler ScriptFileCompilerF) {
+	getScriptFileCompiler = compiler
 }
 
 func ConfigRegisterScriptEngineBuilder(engineName string, builder ScriptEngineBuilder) {
