@@ -16,8 +16,6 @@
 
 package codegen
 
-import "C"
-
 type CustomType struct {
 	typeName string
 }

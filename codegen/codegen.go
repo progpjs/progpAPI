@@ -16,9 +16,8 @@
 
 package codegen
 
-import "C"
 import (
-	"github.com/progpjs/progpAPI"
+	"github.com/progpjs/progpAPI/v2"
 	"log"
 	"os"
 	"path"
@@ -101,7 +100,7 @@ func (m *ProgpV8CodeGenerator) GenerateCode(autoUpdateDir string) {
 	m.createGroupFunctions()
 
 	// Required for: "defer progpAPI.CatchFatalErrors()"
-	m.AddNamespace("github.com/progpjs/progpAPI")
+	m.AddNamespace("github.com/progpjs/progpAPI/v2")
 
 	nsList := ""
 	for _, nsName := range m.getNamespaces() {
