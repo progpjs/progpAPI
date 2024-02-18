@@ -16,6 +16,7 @@
 
 package progpAPI
 
+import "C"
 import (
 	"fmt"
 	"strings"
@@ -55,6 +56,7 @@ func CatchFatalErrors() {
 type TaskQueue struct {
 	channel  chan func()
 	disposed bool
+	onExited func()
 }
 
 func NewTaskQueue() *TaskQueue {
@@ -83,12 +85,13 @@ func (m *TaskQueue) IsDisposed() bool {
 	return m.disposed
 }
 
-func (m *TaskQueue) Dispose() {
+func (m *TaskQueue) Exit(onExited func()) {
 	if m.disposed {
 		return
 	}
-
 	m.disposed = true
+
+	m.onExited = onExited
 	close(m.channel)
 }
 
@@ -101,6 +104,10 @@ func (m *TaskQueue) start() {
 		}
 
 		next()
+	}
+
+	if m.onExited != nil {
+		m.onExited()
 	}
 }
 
