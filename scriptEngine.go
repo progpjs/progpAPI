@@ -101,9 +101,13 @@ type JsFunction interface {
 	CallWithArrayBuffer2(buffer []byte)
 	CallWithString2(value string)
 	CallWithStringBuffer2(value []byte)
+
+	CallWithDouble1(value float64)
 	CallWithDouble2(value float64)
 
 	CallWithBool2(value bool)
+
+	CallWithResource1(value *SharedResource)
 	CallWithResource2(value *SharedResource)
 }
 
