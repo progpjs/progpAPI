@@ -73,7 +73,7 @@ type ScriptCallbackF func(error *JsErrorMessage)
 type ScriptFileExecutorF func(ctx JsContext, scriptPath string) *JsErrorMessage
 type ScriptFileCompilerF func(scriptPath string) (string, string, error)
 type CheckAllowedFunctionsF func(securityGroup string, functionGroup string, functionName string) bool
-type ListenProgpSignalF func(ctx JsContext, signal string) error
+type ListenProgpSignalF func(ctx JsContext, signal string, data string) error
 
 var gScriptFileExecutor ScriptFileExecutorF
 var getScriptFileCompiler ScriptFileCompilerF
