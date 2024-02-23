@@ -66,12 +66,14 @@ type ScriptEngine interface {
 	SetAllowedFunctionsChecker(handler CheckAllowedFunctionsF)
 }
 
+type OnScriptCompilationErrorF func(scriptPath string, err error) bool
 type RuntimeErrorHandlerF func(ctx JsContext, err *JsErrorMessage) bool
 type ScriptTerminatedHandlerF func(ctx JsContext, scriptPath string, err *JsErrorMessage) *JsErrorMessage
 type ScriptCallbackF func(error *JsErrorMessage)
 type ScriptFileExecutorF func(ctx JsContext, scriptPath string) *JsErrorMessage
 type ScriptFileCompilerF func(scriptPath string) (string, string, error)
 type CheckAllowedFunctionsF func(securityGroup string, functionGroup string, functionName string) bool
+type ListenProgpSignalF func(ctx JsContext, signal string) error
 
 var gScriptFileExecutor ScriptFileExecutorF
 var getScriptFileCompiler ScriptFileCompilerF
