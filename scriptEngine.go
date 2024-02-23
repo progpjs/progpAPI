@@ -70,7 +70,7 @@ type OnScriptCompilationErrorF func(scriptPath string, err error) bool
 type RuntimeErrorHandlerF func(ctx JsContext, err *JsErrorMessage) bool
 type ScriptTerminatedHandlerF func(ctx JsContext, scriptPath string, err *JsErrorMessage) *JsErrorMessage
 type ScriptCallbackF func(error *JsErrorMessage)
-type ScriptFileExecutorF func(ctx JsContext, scriptPath string) *JsErrorMessage
+type ScriptFileExecutorF func(ctx JsContext, scriptPath string, onCompiledSuccess func()) *JsErrorMessage
 type ScriptFileCompilerF func(scriptPath string) (string, string, error)
 type CheckAllowedFunctionsF func(securityGroup string, functionGroup string, functionName string) bool
 type ListenProgpSignalF func(ctx JsContext, signal string, data string) error
@@ -127,7 +127,7 @@ type JsContext interface {
 	ExecuteScript(scriptContent string, compiledFilePath string, sourceScriptPath string) *JsErrorMessage
 
 	// ExecuteScriptFile is like ExecuteScript but allows using a file (which can be typescript).
-	ExecuteScriptFile(scriptPath string) *JsErrorMessage
+	ExecuteScriptFile(scriptPath string, onCompiledSuccess func()) *JsErrorMessage
 
 	// ExecuteChildScriptFile execute a script from the inside of another script.
 	ExecuteChildScriptFile(scriptPath string) error
