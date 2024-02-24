@@ -16,7 +16,9 @@
 
 package codegen
 
+import "C"
 import (
+	"fmt"
 	"github.com/progpjs/progpAPI/v2"
 	"log"
 	"os"
@@ -495,6 +497,8 @@ func (m *ProgpV8CodeGenerator) generateFunctionCallers() {
 				continue
 			}
 
+			i--
+
 			typeHandler0 := m.typeMap[inputParam]
 			if typeHandler0 == nil {
 				panic("Unsupported type " + inputParam)
@@ -505,10 +509,8 @@ func (m *ProgpV8CodeGenerator) generateFunctionCallers() {
 				panic("Unsupported type " + inputParam)
 			}
 
-			if inputParam == "string" {
-				vArgArray += typeHandler.FcCppToV8Encoder(i)
-				vFunctionHeader += typeHandler.FcCppFunctionHeader(i)
-			}
+			vArgArray += typeHandler.FcCppToV8Encoder(i)
+			vFunctionHeader += typeHandler.FcCppFunctionHeader(i)
 		}
 
 		cppBodyTemplate := `
@@ -545,6 +547,60 @@ void progpJsFunctionCaller_%FUNCTION_ID%(FCT_CALLBACK_PARAMS%FUNCTION_HEADER%);
 	//region Generate Go code
 
 	nextFunctionId = 1
+
+	fInitContent := ""
+
+	for fctSignature, toBuild := range allFunctionsToBuild {
+		functionId := nextFunctionId
+		nextFunctionId++
+
+		callParams := ""
+		goToCppConv := ""
+		functionHeader := ""
+
+		for i, inputParam := range toBuild.paramTypes {
+			if i == 0 {
+				functionHeader += "jsF v8Function"
+				continue
+			}
+
+			i--
+
+			functionHeader += fmt.Sprintf(", p%d %s", i, inputParam)
+			typeHandler := m.typeMap[inputParam].(IsFunctionCallerSupportedType)
+
+			goToCppConv += typeHandler.FcGoToCppConv(i)
+			callParams += typeHandler.FcGoToCppCallParam(i)
+		}
+
+		fInitContent += fmt.Sprintf("\n    registerFunctionCaller(jsFunctionCaller_%d, \"%s\")", functionId, fctSignature)
+
+		template := `
+
+func jsFunctionCaller_%FUNCTION_ID%(%FUNCTION_HEADER%) {
+	functionPtr, resourceContainer := jsF.prepareCall()
+	if functionPtr == nil {
+		return
+	}
+
+	if jsF.isAsync == cInt1 {
+		jsF.v8Context.taskQueue.Push(func() { /* ... */ })
+	} else {%GO_T0_CPP_CONV%
+
+		C.progpJsFunctionCaller_%FUNCTION_ID%(functionPtr, cInt0, jsF.mustDisposeFunction, jsF.currentEvent, resourceContainer,%CALL_PARAM%
+		)
+	}
+}`
+
+		template = strings.ReplaceAll(template, "%FUNCTION_ID%", strconv.Itoa(functionId))
+		template = strings.ReplaceAll(template, "%FUNCTION_HEADER%", functionHeader)
+		template = strings.ReplaceAll(template, "%GO_T0_CPP_CONV%", goToCppConv)
+		template = strings.ReplaceAll(template, "%CALL_PARAM%", callParams)
+
+		m.goLangInjectThis += template
+	}
+
+	m.goLangInjectThis += "\n\nfunc init() {" + fInitContent + "\n}\n\n"
 
 	//endregion
 }

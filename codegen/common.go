@@ -145,4 +145,6 @@ type IsTypeHandler interface {
 type IsFunctionCallerSupportedType interface {
 	FcCppToV8Encoder(paramId int) string
 	FcCppFunctionHeader(paramId int) string
+	FcGoToCppCallParam(paramId int) string
+	FcGoToCppConv(paramId int) string
 }

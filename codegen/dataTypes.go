@@ -261,6 +261,14 @@ func (m *TypeString) FcCppFunctionHeader(paramId int) string {
 	return fmt.Sprintf(", const char* p%d_val, size_t p%d_size", paramId, paramId)
 }
 
+func (m *TypeString) FcGoToCppCallParam(paramId int) string {
+	return fmt.Sprintf("\n            (*C.char)(p%d_uptr), C.size_t(len(p%d)),", paramId, paramId)
+}
+
+func (m *TypeString) FcGoToCppConv(paramId int) string {
+	return fmt.Sprintf("\n        p%d_uptr := unsafe.Pointer(unsafe.StringData(p%d))", paramId, paramId)
+}
+
 //endregion
 
 //region progpAPI.StringBuffer

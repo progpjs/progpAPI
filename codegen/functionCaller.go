@@ -5,8 +5,7 @@ import (
 	"strings"
 )
 
-func GetFunctionCaller(functionTemplate any) any {
-	// >>> Extract function signature
+func GetFunctionSignature(functionTemplate any) string {
 	rf := progpAPI.RegisteredFunction{GoFunctionRef: functionTemplate}
 	res, err := progpAPI.ParseGoFunction(&rf)
 	if err != nil {
@@ -16,15 +15,19 @@ func GetFunctionCaller(functionTemplate any) any {
 	signature := strings.Join(res.ParamTypes, ",")
 	signature = "(" + signature + "):" + res.ReturnType
 
-	// >>> Returns the existing function
+	return signature
+}
 
-	println("signature:", signature)
-
-	// Here it's the compiled version referencing the real version.
-	existingCaller := gFunctionCallerMap[signature]
-	if existingCaller != nil {
-		return existingCaller
+func AddFunctionCallerToGenerate(functionTemplate any) {
+	// >>> Extract function signature
+	rf := progpAPI.RegisteredFunction{GoFunctionRef: functionTemplate}
+	res, err := progpAPI.ParseGoFunction(&rf)
+	if err != nil {
+		panic(err)
 	}
+
+	signature := strings.Join(res.ParamTypes, ",")
+	signature = "(" + signature + "):" + res.ReturnType
 
 	// >>> Add to the function which need to be created
 
@@ -52,8 +55,6 @@ func GetFunctionCaller(functionTemplate any) any {
 	}
 
 	gHasFunctionCallerToBuild = true
-
-	return nil
 }
 
 func getAllFunctionCallerToBuild() map[string]*functionCallerToBuild {
@@ -78,5 +79,4 @@ type functionCallerToBuild struct {
 }
 
 var gHasFunctionCallerToBuild = false
-var gFunctionCallerMap = make(map[string]any)
 var gFunctionCallerToBuild = make(map[string]*functionCallerToBuild)

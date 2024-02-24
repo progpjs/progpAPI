@@ -64,6 +64,10 @@ type ScriptEngine interface {
 	SetScriptTerminatedHandler(handler ScriptTerminatedHandlerF)
 
 	SetAllowedFunctionsChecker(handler CheckAllowedFunctionsF)
+
+	// GetFunctionCaller returns the function allowing to call javascript function
+	// corresponding to the parameter signature. It uses generated code to get it.
+	GetFunctionCaller(functionSignature string) any
 }
 
 type OnScriptCompilationErrorF func(scriptPath string, err error) bool
@@ -171,7 +175,9 @@ func ConfigRegisterScriptEngineBuilder(engineName string, builder ScriptEngineBu
 	gScriptEngineBuilder[engineName] = builder
 }
 
-func GetScriptEngine(engineName string) ScriptEngine {
+var gSelectedScriptEngine ScriptEngine
+
+func UseScriptEngine(engineName string) ScriptEngine {
 	gScriptEnginesMutex.RLock()
 	engine := gScriptEngines[engineName]
 	gScriptEnginesMutex.RUnlock()
@@ -191,6 +197,7 @@ func GetScriptEngine(engineName string) ScriptEngine {
 	engine = builder()
 	gScriptEngines[engineName] = engine
 
+	gSelectedScriptEngine = engine
 	return engine
 }
 

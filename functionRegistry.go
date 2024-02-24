@@ -310,6 +310,95 @@ func (m *ParsedGoFunction) GetGoFunctionName() string {
 var gNextGoFunctionId = 0
 
 func ParseGoFunction(fct *RegisteredFunction) (ParsedGoFunction, error) {
+	return ParseGoFunction_new(fct)
+}
+
+// ParseGoFunction_new replace ParseGoFunction_old which wasn't able to manage generic function calls.
+func ParseGoFunction_new(fct *RegisteredFunction) (ParsedGoFunction, error) {
+	reflectFct := reflect.TypeOf(fct.GoFunctionRef)
+	res := ParsedGoFunction{ReturnErrorOffset: -1}
+
+	// > Parse parameters
+
+	inCount := reflectFct.NumIn()
+	res.ParamTypeRefs = make([]reflect.Type, inCount)
+
+	for i := 0; i < inCount; i++ {
+		param := reflectFct.In(i)
+		paramTypeName := param.String()
+		res.ParamTypes = append(res.ParamTypes, paramTypeName)
+
+		// > Extract namespace
+
+		// If pointer then take the target type.
+		for {
+			kind := param.Kind()
+
+			if (kind == reflect.Pointer) || (kind == reflect.Array) || (kind == reflect.Slice) || (kind == reflect.Map) {
+				param = param.Elem()
+			} else {
+				break
+			}
+		}
+
+		// Add the namespace if enclosed into a namespace.
+		//
+		pkgPath := param.PkgPath()
+		//
+		if pkgPath != "" {
+			if !slices.Contains(res.CallParamNamespaces, pkgPath) {
+				res.CallParamNamespaces = append(res.CallParamNamespaces, pkgPath)
+			}
+		}
+	}
+
+	// > Parse return infos
+
+	outCount := reflectFct.NumOut()
+	var returnTypes []string
+
+	for i := 0; i < outCount; i++ {
+		outParam := reflectFct.Out(i)
+		outType := outParam.String()
+		returnTypes = append(returnTypes, outType)
+	}
+
+	if outCount >= 1 {
+		if outCount == 1 {
+			if returnTypes[0] == "error" {
+				res.ReturnErrorOffset = 0
+				returnTypes = nil
+			} else {
+				res.ReturnType = returnTypes[0]
+			}
+		} else if outCount == 2 {
+			if returnTypes[0] == "error" {
+				res.ReturnErrorOffset = 0
+				returnTypes = returnTypes[1:]
+
+				if returnTypes[0] == "error" {
+					log.Fatalf("Function %s can return (error, error)", fct.GoFunctionFullName)
+				}
+			} else if returnTypes[1] == "error" {
+				res.ReturnErrorOffset = 1
+				returnTypes = returnTypes[0:1]
+			} else {
+				log.Fatalf("Function %s has more than 1 return type", fct.GoFunctionFullName)
+			}
+
+			res.ReturnType = returnTypes[0]
+		} else {
+			log.Fatalf("Function %s has more than 1 return type", fct.GoFunctionFullName)
+		}
+	}
+
+	gNextGoFunctionId++
+	res.GeneratorUniqName = strconv.Itoa(gNextGoFunctionId)
+
+	return res, nil
+}
+
+func ParseGoFunction_old(fct *RegisteredFunction) (ParsedGoFunction, error) {
 	reflectFct := reflect.TypeOf(fct.GoFunctionRef)
 
 	sgn := reflectFct.String()
