@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -140,6 +141,8 @@ func (m *ProgpV8CodeGenerator) saveFileIfNotTheSame(filePath string, newContent 
 		if err != nil {
 			log.Fatal("Can't write file " + filePath)
 		}
+
+		_ = os.WriteFile(filePath+".old", []byte(oldContent), os.ModePerm)
 
 		println("Codegen has updated file " + filePath)
 
@@ -475,29 +478,45 @@ func progpCgoBinding__%FUNCTION_FULL_NAME%(%FUNCTION_PARAMS%) {
 //region Generation of javascript functions callers
 
 func (m *ProgpV8CodeGenerator) generateFunctionCallers() {
-	allFunctionsToBuild := getAllFunctionCallerToBuild()
-	if allFunctionsToBuild == nil {
+	allFunctionInfos := getAllFunctionCallerToBuild()
+	if allFunctionInfos == nil {
 		return
 	}
+
+	var allFunctionsSign []string
+	for sign := range allFunctionInfos {
+		allFunctionsSign = append(allFunctionsSign, sign)
+	}
+
+	// Allow to always generate code in the same order.
+	slices.Sort(allFunctionsSign)
 
 	//region Generate C++ code
 
 	nextFunctionId := 1
 
-	for _, toBuild := range allFunctionsToBuild {
+	for _, sign := range allFunctionsSign {
+		toBuild := allFunctionInfos[sign]
+
 		functionId := nextFunctionId
 		nextFunctionId++
 
 		vArgArray := ""
 		vFunctionHeader := ""
-		vArgCount := len(toBuild.paramTypes) - 1
+		vArgCount := len(toBuild.paramTypes) - 2
 
 		for i, inputParam := range toBuild.paramTypes {
 			if i == 0 {
+				// It's the interface type, a param automatically added.
 				continue
 			}
 
-			i--
+			if i == 1 {
+				// The function ref.
+				continue
+			}
+
+			i -= 2
 
 			typeHandler0 := m.typeMap[inputParam]
 			if typeHandler0 == nil {
@@ -550,7 +569,9 @@ void progpJsFunctionCaller_%FUNCTION_ID%(FCT_CALLBACK_PARAMS%FUNCTION_HEADER%);
 
 	fInitContent := ""
 
-	for fctSignature, toBuild := range allFunctionsToBuild {
+	for _, fctSignature := range allFunctionsSign {
+		toBuild := allFunctionInfos[fctSignature]
+
 		functionId := nextFunctionId
 		nextFunctionId++
 
@@ -560,11 +581,16 @@ void progpJsFunctionCaller_%FUNCTION_ID%(FCT_CALLBACK_PARAMS%FUNCTION_HEADER%);
 
 		for i, inputParam := range toBuild.paramTypes {
 			if i == 0 {
-				functionHeader += "jsF v8Function"
+				// It's the interface type, a param automatically added.
 				continue
 			}
 
-			i--
+			if i == 1 {
+				functionHeader += "jsFunction progpAPI.JsFunction"
+				continue
+			}
+
+			i -= 2
 
 			functionHeader += fmt.Sprintf(", p%d %s", i, inputParam)
 			typeHandler := m.typeMap[inputParam].(IsFunctionCallerSupportedType)
@@ -573,11 +599,15 @@ void progpJsFunctionCaller_%FUNCTION_ID%(FCT_CALLBACK_PARAMS%FUNCTION_HEADER%);
 			callParams += typeHandler.FcGoToCppCallParam(i)
 		}
 
-		fInitContent += fmt.Sprintf("\n    registerFunctionCaller(jsFunctionCaller_%d, \"%s\")", functionId, fctSignature)
+		fInitContent += fmt.Sprintf("\n    registerFunctionCaller(&jsFunctionCaller_%d{}, \"%s\")", functionId, fctSignature)
 
 		template := `
 
-func jsFunctionCaller_%FUNCTION_ID%(%FUNCTION_HEADER%) {
+type jsFunctionCaller_%FUNCTION_ID% struct {
+}
+
+func (m *jsFunctionCaller_%FUNCTION_ID%) Call(%FUNCTION_HEADER%) {
+	jsF := jsFunction.(*v8Function)
 	functionPtr, resourceContainer := jsF.prepareCall()
 	if functionPtr == nil {
 		return

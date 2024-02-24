@@ -83,6 +83,8 @@ var gScriptFileExecutor ScriptFileExecutorF
 var getScriptFileCompiler ScriptFileCompilerF
 
 type JsFunction interface {
+	CallWith(f func())
+
 	CallWithUndefined()
 
 	CallWithError(err error)

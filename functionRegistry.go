@@ -19,7 +19,6 @@ package progpAPI
 import "C"
 import (
 	"embed"
-	"errors"
 	"log"
 	"path"
 	"reflect"
@@ -310,12 +309,11 @@ func (m *ParsedGoFunction) GetGoFunctionName() string {
 var gNextGoFunctionId = 0
 
 func ParseGoFunction(fct *RegisteredFunction) (ParsedGoFunction, error) {
-	return ParseGoFunction_new(fct)
+	reflectFct := reflect.TypeOf(fct.GoFunctionRef)
+	return ParseGoFunctionReflect(reflectFct, fct.GoFunctionFullName)
 }
 
-// ParseGoFunction_new replace ParseGoFunction_old which wasn't able to manage generic function calls.
-func ParseGoFunction_new(fct *RegisteredFunction) (ParsedGoFunction, error) {
-	reflectFct := reflect.TypeOf(fct.GoFunctionRef)
+func ParseGoFunctionReflect(reflectFct reflect.Type, goFunctionFullName string) (ParsedGoFunction, error) {
 	res := ParsedGoFunction{ReturnErrorOffset: -1}
 
 	// > Parse parameters
@@ -377,121 +375,20 @@ func ParseGoFunction_new(fct *RegisteredFunction) (ParsedGoFunction, error) {
 				returnTypes = returnTypes[1:]
 
 				if returnTypes[0] == "error" {
-					log.Fatalf("Function %s can return (error, error)", fct.GoFunctionFullName)
+					log.Fatalf("Function %s can return (error, error)", goFunctionFullName)
 				}
 			} else if returnTypes[1] == "error" {
 				res.ReturnErrorOffset = 1
 				returnTypes = returnTypes[0:1]
 			} else {
-				log.Fatalf("Function %s has more than 1 return type", fct.GoFunctionFullName)
+				log.Fatalf("Function %s has more than 1 return type", goFunctionFullName)
 			}
 
 			res.ReturnType = returnTypes[0]
 		} else {
-			log.Fatalf("Function %s has more than 1 return type", fct.GoFunctionFullName)
+			log.Fatalf("Function %s has more than 1 return type", goFunctionFullName)
 		}
 	}
-
-	gNextGoFunctionId++
-	res.GeneratorUniqName = strconv.Itoa(gNextGoFunctionId)
-
-	return res, nil
-}
-
-func ParseGoFunction_old(fct *RegisteredFunction) (ParsedGoFunction, error) {
-	reflectFct := reflect.TypeOf(fct.GoFunctionRef)
-
-	sgn := reflectFct.String()
-	res := ParsedGoFunction{ReturnErrorOffset: -1}
-
-	if !strings.HasPrefix(sgn, "func(") {
-		return res, errors.New("expect a function as second param")
-	}
-
-	// region Extract information from this function signature
-
-	sgn = sgn[5:]
-
-	idx := strings.Index(sgn, ")")
-	returnInfos := strings.TrimSpace(sgn[idx+1:])
-	sgn = sgn[0:idx]
-
-	if sgn == "" {
-		res.ParamTypes = []string{}
-	} else {
-		res.ParamTypes = strings.Split(sgn, ", ")
-	}
-
-	if returnInfos != "" {
-		if returnInfos[0] == '(' {
-			returnInfos = returnInfos[1 : len(returnInfos)-1]
-		}
-
-		returnTypes := strings.Split(returnInfos, ", ")
-
-		size := len(returnTypes)
-
-		if size >= 1 {
-			if size == 1 {
-				if returnTypes[0] == "error" {
-					res.ReturnErrorOffset = 0
-					returnTypes = nil
-				} else {
-					res.ReturnType = returnTypes[0]
-				}
-			} else if size == 2 {
-				if returnTypes[0] == "error" {
-					res.ReturnErrorOffset = 0
-					returnTypes = returnTypes[1:]
-
-					if returnTypes[0] == "error" {
-						log.Fatalf("Function %s can return (error, error)", fct.GoFunctionFullName)
-					}
-				} else if returnTypes[1] == "error" {
-					res.ReturnErrorOffset = 1
-					returnTypes = returnTypes[0:1]
-				} else {
-					log.Fatalf("Function %s has more than 1 return type", fct.GoFunctionFullName)
-				}
-
-				res.ReturnType = returnTypes[0]
-			} else {
-				log.Fatalf("Function %s has more than 1 return type", fct.GoFunctionFullName)
-			}
-		}
-	}
-
-	//endregion
-
-	//region Extract namespace for his call arguments
-
-	paramsCount := reflectFct.NumIn()
-	res.ParamTypeRefs = make([]reflect.Type, paramsCount)
-
-	for i := 0; i < paramsCount; i++ {
-		param := reflectFct.In(i)
-		res.ParamTypeRefs[i] = param
-
-		for {
-			kind := param.Kind()
-
-			if (kind == reflect.Pointer) || (kind == reflect.Array) || (kind == reflect.Slice) || (kind == reflect.Map) {
-				param = param.Elem()
-			} else {
-				break
-			}
-		}
-
-		pkgPath := param.PkgPath()
-
-		if pkgPath != "" {
-			if !slices.Contains(res.CallParamNamespaces, pkgPath) {
-				res.CallParamNamespaces = append(res.CallParamNamespaces, pkgPath)
-			}
-		}
-	}
-
-	//endregion
 
 	gNextGoFunctionId++
 	res.GeneratorUniqName = strconv.Itoa(gNextGoFunctionId)
