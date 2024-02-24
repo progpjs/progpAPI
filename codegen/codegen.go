@@ -36,10 +36,13 @@ type ProgpV8CodeGenerator struct {
 	functionList []*progpAPI.RegisteredFunction
 	typeMap      map[string]IsTypeHandler
 
-	cppImplInjectThis string
-	goLangInjectThis  string
-	fileCppImpl       string
-	fileGoLang        string
+	cppImplInjectThis   string
+	cppHeaderInjectThis string
+	goLangInjectThis    string
+
+	fileCppImpl   string
+	fileCppHeader string
+	fileGoLang    string
 }
 
 func NewProgpV8Codegen() *ProgpV8CodeGenerator {
@@ -92,102 +95,16 @@ func (m *ProgpV8CodeGenerator) GenerateCode(autoUpdateDir string) {
 
 	m.outputDir = autoUpdateDir
 
-	for _, f := range m.functionList {
-		if err := m.glueCodeCreateBindingFunctionsFor(f); err != nil {
-			log.Fatal(err)
-			return
-		}
-	}
+	m.generateFunctionCallers()
+	m.generateCodeForExportedGoFunctions()
 
-	m.createGroupFunctions()
-
-	// Required for: "defer progpAPI.CatchFatalErrors()"
-	m.AddNamespace("github.com/progpjs/progpAPI/v2")
-
-	nsList := ""
-	for _, nsName := range m.getNamespaces() {
-		nsList += "\n    " + progpAPI.GoStringToQuotedString2(nsName)
-	}
-
-	var template string
-
-	//region File : generated.cpp
-
-	template = `#ifndef PROGP_STANDALONE
-
-#include "progpV8.h"
-#include "_cgo_export.h"
-#include <iostream>
-#include <stdexcept>
-%INJECT_HERE%
-
-#endif // PROGP_STANDALONE
-`
-
-	template = strings.ReplaceAll(template, "%INJECT_HERE%", m.cppImplInjectThis)
-	m.fileCppImpl = template
-
-	//endregion
-
-	//region file : generated.go
-
-	template = `package progpV8Engine
-// #include <stdlib.h> // For C.free
-// #include "progpAPI.h"
-//
-import "C"
-
-import (%NAMESPACES%
-)
-
-%INJECT_HERE%
-`
-	template = strings.ReplaceAll(template, "%INJECT_HERE%", m.goLangInjectThis)
-	template = strings.ReplaceAll(template, "%NAMESPACES%", nsList)
-	m.fileGoLang = template
-
-	//endregion
-
-	hasUpdated := false
-
-	if m.saveFileIfNotTheSame(path.Join(m.outputDir, "generated.cpp"), m.fileCppImpl) {
-		hasUpdated = true
-	}
-	if m.saveFileIfNotTheSame(path.Join(m.outputDir, "generated.go"), m.fileGoLang) {
-		hasUpdated = true
-	}
-
-	if hasUpdated {
-		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-		println("!  Javascript binding code has been updated.  !")
-		println("!  A restart is required.                     !")
-		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-		os.Exit(1)
-	}
+	m.generateFinalFiles()
 }
+
+//region Common
 
 func (m *ProgpV8CodeGenerator) AddNamespace(namespacePath string) {
 	m.namespaces[namespacePath] = true
-}
-
-func (m *ProgpV8CodeGenerator) tryToCreateTypeHandler(typeName string) IsTypeHandler {
-	return &CustomType{typeName: typeName}
-}
-
-func (m *ProgpV8CodeGenerator) getType(typeName string) IsTypeHandler {
-	if res, ok := m.typeMap[typeName]; ok {
-		return res
-	}
-
-	res := m.tryToCreateTypeHandler(typeName)
-
-	if res != nil {
-		m.typeMap[typeName] = res
-		return res
-	}
-
-	log.Fatal("Type " + typeName + " not found by the code generator engine")
-	return nil
 }
 
 func (m *ProgpV8CodeGenerator) getNamespaces() []string {
@@ -228,6 +145,126 @@ func (m *ProgpV8CodeGenerator) saveFileIfNotTheSame(filePath string, newContent 
 	}
 
 	return false
+}
+
+func (m *ProgpV8CodeGenerator) generateFinalFiles() {
+	// Required for: "defer progpAPI.CatchFatalErrors()"
+	m.AddNamespace("github.com/progpjs/progpAPI/v2")
+
+	nsList := ""
+	for _, nsName := range m.getNamespaces() {
+		nsList += "\n    " + progpAPI.GoStringToQuotedString2(nsName)
+	}
+
+	var template string
+
+	//region File : generated.cpp
+
+	template = `#ifndef PROGP_STANDALONE
+
+#include "progpV8.h"
+#include "_cgo_export.h"
+#include <iostream>
+#include <stdexcept>
+%INJECT_HERE%
+
+#endif // PROGP_STANDALONE
+`
+
+	template = strings.ReplaceAll(template, "%INJECT_HERE%", m.cppImplInjectThis)
+	m.fileCppImpl += template
+
+	//endregion
+
+	//region File : generated.h
+
+	template = `#ifndef PROGP_STANDALONE
+
+%INJECT_HERE%
+
+#endif // PROGP_STANDALONE
+`
+
+	template = strings.ReplaceAll(template, "%INJECT_HERE%", m.cppHeaderInjectThis)
+	m.fileCppHeader += template
+
+	//endregion
+
+	//region file : generated.go
+
+	template = `package progpV8Engine
+// #include <stdlib.h> // For C.free
+// #include "progpAPI.h"
+//
+import "C"
+
+import (%NAMESPACES%
+)
+
+%INJECT_HERE%
+`
+	template = strings.ReplaceAll(template, "%INJECT_HERE%", m.goLangInjectThis)
+	template = strings.ReplaceAll(template, "%NAMESPACES%", nsList)
+	m.fileGoLang += template
+
+	//endregion
+
+	hasUpdated := false
+
+	if m.saveFileIfNotTheSame(path.Join(m.outputDir, "generated.cpp"), m.fileCppImpl) {
+		hasUpdated = true
+	}
+
+	if m.saveFileIfNotTheSame(path.Join(m.outputDir, "generated.h"), m.fileCppHeader) {
+		hasUpdated = true
+	}
+
+	if m.saveFileIfNotTheSame(path.Join(m.outputDir, "generated.go"), m.fileGoLang) {
+		hasUpdated = true
+	}
+
+	if hasUpdated {
+		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		println("!  Javascript binding code has been updated.  !")
+		println("!  A restart is required.                     !")
+		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		os.Exit(1)
+	}
+}
+
+//endregion
+
+//region Generation of exported Go functions
+
+func (m *ProgpV8CodeGenerator) generateCodeForExportedGoFunctions() {
+	for _, f := range m.functionList {
+		if err := m.glueCodeCreateBindingFunctionsFor(f); err != nil {
+			log.Fatal(err)
+			return
+		}
+	}
+
+	m.createGroupFunctions()
+}
+
+func (m *ProgpV8CodeGenerator) tryToCreateTypeHandler(typeName string) IsTypeHandler {
+	return &CustomType{typeName: typeName}
+}
+
+func (m *ProgpV8CodeGenerator) getType(typeName string) IsTypeHandler {
+	if res, ok := m.typeMap[typeName]; ok {
+		return res
+	}
+
+	res := m.tryToCreateTypeHandler(typeName)
+
+	if res != nil {
+		m.typeMap[typeName] = res
+		return res
+	}
+
+	log.Fatal("Type " + typeName + " not found by the code generator engine")
+	return nil
 }
 
 func (m *ProgpV8CodeGenerator) createGroupFunctions() {
@@ -430,3 +467,86 @@ func progpCgoBinding__%FUNCTION_FULL_NAME%(%FUNCTION_PARAMS%) {
 
 	return nil
 }
+
+//endregion
+
+//region Generation of javascript functions callers
+
+func (m *ProgpV8CodeGenerator) generateFunctionCallers() {
+	allFunctionsToBuild := getAllFunctionCallerToBuild()
+	if allFunctionsToBuild == nil {
+		return
+	}
+
+	//region Generate C++ code
+
+	nextFunctionId := 1
+
+	for _, toBuild := range allFunctionsToBuild {
+		functionId := nextFunctionId
+		nextFunctionId++
+
+		vArgArray := ""
+		vFunctionHeader := ""
+		vArgCount := len(toBuild.paramTypes) - 1
+
+		for i, inputParam := range toBuild.paramTypes {
+			if i == 0 {
+				continue
+			}
+
+			typeHandler0 := m.typeMap[inputParam]
+			if typeHandler0 == nil {
+				panic("Unsupported type " + inputParam)
+			}
+
+			typeHandler := typeHandler0.(IsFunctionCallerSupportedType)
+			if typeHandler == nil {
+				panic("Unsupported type " + inputParam)
+			}
+
+			if inputParam == "string" {
+				vArgArray += typeHandler.FcCppToV8Encoder(i)
+				vFunctionHeader += typeHandler.FcCppFunctionHeader(i)
+			}
+		}
+
+		cppBodyTemplate := `
+
+extern "C"
+void progpJsFunctionCaller_%FUNCTION_ID%(FCT_CALLBACK_PARAMS%FUNCTION_HEADER%) {
+	 FCT_CALLBACK_BEFORE
+	
+    v8::Local<v8::Value> argArray[%ARG_COUNT%];
+%ARG_ARRAY%
+	auto isEmpty = functionRef->ref.Get(v8Iso)->Call(v8Ctx, v8Ctx->Global(), %ARG_COUNT%, argArray).IsEmpty();
+	
+	FCT_CALLBACK_AFTER
+}`
+
+		cppHeaderTemplate := `
+void progpJsFunctionCaller_%FUNCTION_ID%(FCT_CALLBACK_PARAMS%FUNCTION_HEADER%);
+`
+
+		cppBodyTemplate = strings.ReplaceAll(cppBodyTemplate, "%FUNCTION_ID%", strconv.Itoa(functionId))
+		cppBodyTemplate = strings.ReplaceAll(cppBodyTemplate, "%FUNCTION_HEADER%", vFunctionHeader)
+		cppBodyTemplate = strings.ReplaceAll(cppBodyTemplate, "%ARG_ARRAY%", vArgArray)
+		cppBodyTemplate = strings.ReplaceAll(cppBodyTemplate, "%ARG_COUNT%", strconv.Itoa(vArgCount))
+
+		cppHeaderTemplate = strings.ReplaceAll(cppHeaderTemplate, "%FUNCTION_ID%", strconv.Itoa(functionId))
+		cppHeaderTemplate = strings.ReplaceAll(cppHeaderTemplate, "%FUNCTION_HEADER%", vFunctionHeader)
+
+		m.cppImplInjectThis = m.cppImplInjectThis + cppBodyTemplate
+		m.cppHeaderInjectThis = m.cppHeaderInjectThis + cppHeaderTemplate
+	}
+
+	//endregion
+
+	//region Generate Go code
+
+	nextFunctionId = 1
+
+	//endregion
+}
+
+//endregion

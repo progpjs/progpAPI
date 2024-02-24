@@ -141,3 +141,8 @@ type IsTypeHandler interface {
 	// .
 	GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string
 }
+
+type IsFunctionCallerSupportedType interface {
+	FcCppToV8Encoder(paramId int) string
+	FcCppFunctionHeader(paramId int) string
+}

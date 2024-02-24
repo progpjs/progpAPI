@@ -16,6 +16,8 @@
 
 package codegen
 
+import "fmt"
+
 //region void
 
 type TypeVoid struct {
@@ -247,6 +249,16 @@ func (m *TypeString) CgoToGoDecoding(paramName string, ctx *ProgpV8CodeGenerator
 func (m *TypeString) GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string {
 	ctx.AddNamespace("unsafe")
 	return "    res.value = unsafe.Pointer(&goRes)"
+}
+
+func (m *TypeString) FcCppToV8Encoder(paramId int) string {
+	return fmt.Sprintf(
+		"    argArray[%d] = v8::String::NewFromUtf8(v8Iso, p%d_val, v8::NewStringType::kNormal, (int)p%d_size).ToLocalChecked();\n", paramId, paramId, paramId)
+
+}
+
+func (m *TypeString) FcCppFunctionHeader(paramId int) string {
+	return fmt.Sprintf(", const char* p%d_val, size_t p%d_size", paramId, paramId)
 }
 
 //endregion
