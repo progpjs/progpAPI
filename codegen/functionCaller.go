@@ -28,12 +28,12 @@ func AddFunctionCallerToGenerate(reflectFct reflect.Type) {
 	}
 
 	signature := strings.Join(res.ParamTypes, ",")
-	signature = "(" + signature + "):" + res.ReturnType
+	signature = "(" + signature + ")"
 
 	// >>> Add to the function which need to be created
 
-	if res.ReturnErrorOffset != -1 {
-		panic("Returning an error value isn't supported")
+	if (res.ReturnErrorOffset != -1) || (res.ReturnType != "") {
+		panic("Returning a value isn't supported")
 	}
 
 	// param[0] is the interface type and is automatically added by Go.
