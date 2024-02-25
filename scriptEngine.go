@@ -83,8 +83,6 @@ var gScriptFileExecutor ScriptFileExecutorF
 var getScriptFileCompiler ScriptFileCompilerF
 
 type JsFunction interface {
-	CallWith(f func())
-
 	CallWithUndefined()
 
 	CallWithError(err error)
@@ -124,7 +122,7 @@ type JsContext interface {
 
 	// GetSecurityGroup returns a group name which allows knowing the category of this context.
 	// It's mainly used to allows / don't allow access to some functions groups.
-	// For exemple you can use security group "unsafe" then the script will no be able to access to Go functions.
+	// For example you can use security group "unsafe" then the script will no be able to access to Go functions.
 	//
 	GetSecurityGroup() string
 
