@@ -7,8 +7,3 @@ func GetFunctionCaller(functionTemplate string) any {
 
 	return gSelectedScriptEngine.GetFunctionCaller(functionTemplate)
 }
-
-func DynamicFunctionCaller(params ...any) (any, error) {
-	// TODO
-	return nil, nil
-}

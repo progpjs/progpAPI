@@ -92,6 +92,8 @@ type JsFunction interface {
 	//
 	KeepAlive()
 
+	DynamicFunctionCaller(values ...any)
+
 	// EnabledResourcesAutoDisposing allows the engine to automatically dispose the resources created while
 	// calling this function. Without that you must call progpDispose on each disposable resources.
 	// Here no, when activating this flag the engine release all the resource one the function call ends.
