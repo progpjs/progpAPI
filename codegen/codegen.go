@@ -501,6 +501,7 @@ func (m *ProgpV8CodeGenerator) generateFunctionCallers() {
 		functionId := nextFunctionId
 		nextFunctionId++
 
+		vExtra := ""
 		vArgArray := ""
 		vFunctionHeader := ""
 		vArgCount := len(toBuild.paramTypes) - 2
@@ -523,21 +524,26 @@ func (m *ProgpV8CodeGenerator) generateFunctionCallers() {
 				panic("Unsupported type " + inputParam)
 			}
 
-			typeHandler := typeHandler0.(IsFunctionCallerSupportedType)
-			if typeHandler == nil {
-				panic("Unsupported type " + inputParam)
+			typeHandler, isSupported := typeHandler0.(IsFunctionCallerSupportedType)
+			if !isSupported {
+				panic("Unsupported function caller type " + inputParam)
 			}
 
 			vArgArray += typeHandler.FcCppToV8Encoder(i)
 			vFunctionHeader += typeHandler.FcCppFunctionHeader(i)
+
+			if inputParam == "[]uint8" {
+				// Required for buffer allocation.
+				vExtra = "v8Ctx->Enter();"
+			}
 		}
 
 		cppBodyTemplate := `
 
 extern "C"
 void progpJsFunctionCaller_%FUNCTION_ID%(FCT_CALLBACK_PARAMS%FUNCTION_HEADER%) {
-	 FCT_CALLBACK_BEFORE
-	
+	FCT_CALLBACK_BEFORE
+	%EXTRA%
     v8::Local<v8::Value> argArray[%ARG_COUNT%];
 %ARG_ARRAY%
 	auto isEmpty = functionRef->ref.Get(v8Iso)->Call(v8Ctx, v8Ctx->Global(), %ARG_COUNT%, argArray).IsEmpty();
@@ -549,6 +555,7 @@ void progpJsFunctionCaller_%FUNCTION_ID%(FCT_CALLBACK_PARAMS%FUNCTION_HEADER%) {
 void progpJsFunctionCaller_%FUNCTION_ID%(FCT_CALLBACK_PARAMS%FUNCTION_HEADER%);
 `
 
+		cppBodyTemplate = strings.ReplaceAll(cppBodyTemplate, "%EXTRA%", vExtra)
 		cppBodyTemplate = strings.ReplaceAll(cppBodyTemplate, "%FUNCTION_ID%", strconv.Itoa(functionId))
 		cppBodyTemplate = strings.ReplaceAll(cppBodyTemplate, "%FUNCTION_HEADER%", vFunctionHeader)
 		cppBodyTemplate = strings.ReplaceAll(cppBodyTemplate, "%ARG_ARRAY%", vArgArray)
@@ -595,7 +602,7 @@ void progpJsFunctionCaller_%FUNCTION_ID%(FCT_CALLBACK_PARAMS%FUNCTION_HEADER%);
 			functionHeader += fmt.Sprintf(", p%d %s", i, inputParam)
 			typeHandler := m.typeMap[inputParam].(IsFunctionCallerSupportedType)
 
-			goToCppConv += typeHandler.FcGoToCppConv(i)
+			goToCppConv += typeHandler.FcGoToCppConvCache(i)
 			callParams += typeHandler.FcGoToCppCallParam(i)
 		}
 

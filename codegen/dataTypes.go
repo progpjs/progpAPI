@@ -251,24 +251,6 @@ func (m *TypeString) GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string {
 	return "    res.value = unsafe.Pointer(&goRes)"
 }
 
-func (m *TypeString) FcCppToV8Encoder(paramId int) string {
-	return fmt.Sprintf(
-		"    argArray[%d] = v8::String::NewFromUtf8(v8Iso, p%d_val, v8::NewStringType::kNormal, (int)p%d_size).ToLocalChecked();\n", paramId, paramId, paramId)
-
-}
-
-func (m *TypeString) FcCppFunctionHeader(paramId int) string {
-	return fmt.Sprintf(", const char* p%d_val, size_t p%d_size", paramId, paramId)
-}
-
-func (m *TypeString) FcGoToCppCallParam(paramId int) string {
-	return fmt.Sprintf("\n            (*C.char)(p%d_uptr), C.size_t(len(p%d)),", paramId, paramId)
-}
-
-func (m *TypeString) FcGoToCppConv(paramId int) string {
-	return fmt.Sprintf("\n        p%d_uptr := unsafe.Pointer(unsafe.StringData(p%d))", paramId, paramId)
-}
-
 //endregion
 
 //region progpAPI.StringBuffer
@@ -507,5 +489,120 @@ func (m *TypeSharedResourceContainer) CgoToGoDecoding(paramName string, ctx *Pro
 func (m *TypeSharedResourceContainer) GoValueToCgoValue(ctx *ProgpV8CodeGenerator) string {
 	return ""
 }
+
+//endregion
+
+//region >>> For function caller
+
+//region string
+
+func (m *TypeString) FcCppToV8Encoder(paramId int) string {
+	return fmt.Sprintf(
+		"    argArray[%d] = v8::String::NewFromUtf8(v8Iso, p%d_val, v8::NewStringType::kNormal, (int)p%d_size).ToLocalChecked();\n", paramId, paramId, paramId)
+
+}
+
+func (m *TypeString) FcCppFunctionHeader(paramId int) string {
+	return fmt.Sprintf(", const char* p%d_val, size_t p%d_size", paramId, paramId)
+}
+
+func (m *TypeString) FcGoToCppCallParam(paramId int) string {
+	return fmt.Sprintf("\n                (*C.char)(unsafe.Pointer(unsafe.StringData(p%d))), C.size_t(len(p%d)),", paramId, paramId)
+}
+
+func (m *TypeString) FcGoToCppConvCache(paramId int) string {
+	return ""
+}
+
+//endregion
+
+//region bool
+
+func (m *TypeBool) FcCppToV8Encoder(paramId int) string {
+	return fmt.Sprintf(
+		"    argArray[%d] = BOOL_TO_V8VALUE(p%d);\n", paramId, paramId)
+}
+
+func (m *TypeBool) FcCppFunctionHeader(paramId int) string {
+	return fmt.Sprintf(",int p%d", paramId)
+}
+
+func (m *TypeBool) FcGoToCppCallParam(paramId int) string {
+	return fmt.Sprintf("\n                asCBool(p%d),", paramId)
+}
+
+func (m *TypeBool) FcGoToCppConvCache(_ int) string {
+	return ""
+}
+
+//endregion
+
+//region float64
+
+func (m *TypeFloat64) FcCppToV8Encoder(paramId int) string {
+	return fmt.Sprintf(
+		"    argArray[%d] = DOUBLE_TO_V8VALUE(p%d);\n", paramId, paramId)
+}
+
+func (m *TypeFloat64) FcCppFunctionHeader(paramId int) string {
+	return fmt.Sprintf(", double p%d", paramId)
+}
+
+func (m *TypeFloat64) FcGoToCppCallParam(paramId int) string {
+	return fmt.Sprintf("\n                (C.double)(p%d),", paramId)
+}
+
+func (m *TypeFloat64) FcGoToCppConvCache(_ int) string {
+	return ""
+}
+
+//endregion
+
+//region []uint / ArrayBuffer
+
+func (m *TypeUIntArray) FcCppToV8Encoder(paramId int) string {
+	return fmt.Sprintf(`
+	auto p%d_bs = std::shared_ptr(v8::ArrayBuffer::NewBackingStore(v8Iso, p%d_size));
+	memcpy(p%d_bs->Data(), p%d_buffer, p%d_size);
+	argArray[%d] = v8::ArrayBuffer::New(v8Iso, p%d_bs);
+
+`, paramId, paramId, paramId, paramId, paramId, paramId, paramId)
+}
+
+func (m *TypeUIntArray) FcCppFunctionHeader(paramId int) string {
+	return fmt.Sprintf(", const char* p%d_buffer, size_t p%d_size", paramId, paramId)
+}
+
+func (m *TypeUIntArray) FcGoToCppCallParam(paramId int) string {
+	return fmt.Sprintf("\n                (*C.char)(unsafe.Pointer(&p%d[0])), C.size_t(len(p%d)),", paramId, paramId)
+}
+
+func (m *TypeUIntArray) FcGoToCppConvCache(_ int) string {
+	return ""
+}
+
+//endregion
+
+//region progpAPI.StringBuffer
+
+func (m *TypeStringBuffer) FcCppToV8Encoder(paramId int) string {
+	return fmt.Sprintf(
+		"    argArray[%d] = v8::String::NewFromUtf8(v8Iso, (char*)p%d_val, v8::NewStringType::kNormal, (int)p%d_size).ToLocalChecked();\n", paramId, paramId, paramId)
+
+}
+
+func (m *TypeStringBuffer) FcCppFunctionHeader(paramId int) string {
+	return fmt.Sprintf(", const char* p%d_val, size_t p%d_size", paramId, paramId)
+}
+
+func (m *TypeStringBuffer) FcGoToCppCallParam(paramId int) string {
+	return fmt.Sprintf("\n                (*C.char)(unsafe.Pointer(&p%d[0])), C.size_t(len(p%d)),", paramId, paramId)
+}
+
+func (m *TypeStringBuffer) FcGoToCppConvCache(_ int) string {
+	return ""
+}
+
+//endregion
 
 //endregion
