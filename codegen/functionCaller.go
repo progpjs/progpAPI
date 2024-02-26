@@ -18,8 +18,6 @@ func GetFunctionSignature(reflectFct reflect.Type) string {
 	return signature
 }
 
-var gFctTypeRef progpAPI.JsFunction
-
 func AddFunctionCallerToGenerate(reflectFct reflect.Type) {
 	// >>> Extract function signature
 	res, err := progpAPI.ParseGoFunctionReflect(reflectFct, "")
@@ -41,7 +39,7 @@ func AddFunctionCallerToGenerate(reflectFct reflect.Type) {
 	//
 	// Strange behaviors "progpAPI.JsFunction" began "progpV8Engine.v8Function"
 	//
-	if (len(res.ParamTypes) <= 1) || (res.ParamTypeRefs[1] != reflect.TypeOf(gFctTypeRef)) {
+	if (len(res.ParamTypes) <= 1) || (res.ParamTypeRefs[1].String() != "progpAPI.JsFunction") {
 		panic("The first parameter must be of type progpAPI.JsFunction")
 	}
 

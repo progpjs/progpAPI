@@ -325,6 +325,7 @@ func ParseGoFunctionReflect(reflectFct reflect.Type, goFunctionFullName string) 
 		param := reflectFct.In(i)
 		paramTypeName := param.String()
 		res.ParamTypes = append(res.ParamTypes, paramTypeName)
+		res.ParamTypeRefs[i] = param
 
 		// > Extract namespace
 
