@@ -42,6 +42,7 @@ type JsErrorMessage struct {
 	EndPosition   int
 
 	SourceMapUrl string
+	SourceMap    string
 	ScriptPath   string
 
 	StackTraceFrameCount int

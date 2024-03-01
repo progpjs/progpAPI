@@ -75,7 +75,7 @@ type RuntimeErrorHandlerF func(ctx JsContext, err *JsErrorMessage) bool
 type ScriptTerminatedHandlerF func(ctx JsContext, scriptPath string, err *JsErrorMessage) *JsErrorMessage
 type ScriptCallbackF func(error *JsErrorMessage)
 type ScriptFileExecutorF func(ctx JsContext, scriptPath string, onCompiledSuccess func()) *JsErrorMessage
-type ScriptFileCompilerF func(scriptPath string) (string, string, error)
+type ScriptFileCompilerF func(scriptPath string) (string, string, string, error)
 type CheckAllowedFunctionsF func(securityGroup string, functionGroup string, functionName string) bool
 type ListenProgpSignalF func(ctx JsContext, signal string, data string) error
 
@@ -130,7 +130,7 @@ type JsContext interface {
 
 	// ExecuteScript executes a script inside this context.
 	// It must be used once and don't allow executing more than one script.
-	ExecuteScript(scriptContent string, compiledFilePath string, sourceScriptPath string) *JsErrorMessage
+	ExecuteScript(scriptContent string, compiledFilePath string, sourceScriptPath string, sourceMap string) *JsErrorMessage
 
 	// ExecuteScriptFile is like ExecuteScript but allows using a file (which can be typescript).
 	ExecuteScriptFile(scriptPath string, onCompiledSuccess func()) *JsErrorMessage
@@ -140,7 +140,7 @@ type JsContext interface {
 
 	// TryDispose destroy the context and free his resources.
 	// It's do nothing if this context can't be disposed, for
-	// exemple if the engine only support one context.
+	// example if the engine only support one context.
 	//
 	TryDispose() bool
 
