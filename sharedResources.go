@@ -34,6 +34,10 @@ func (m *SharedResource) finalizer() {
 	m.Dispose()
 }
 
+func (m *SharedResource) GetContainer() *SharedResourceContainer {
+	return m.group
+}
+
 func (m *SharedResource) GetId() int {
 	return m.id
 }
@@ -89,6 +93,12 @@ func NewSharedResourceContainer(parent *SharedResourceContainer, ctx JsContext) 
 	}
 
 	return m
+}
+
+func (m *SharedResourceContainer) CreateLock() (*JavascriptLock, *SharedResource) {
+	jsLock := &JavascriptLock{}
+	jsLock.Wait()
+	return jsLock, m.NewSharedResource(jsLock, nil)
 }
 
 func (m *SharedResourceContainer) Dispose() {
@@ -242,3 +252,22 @@ func newSharedResource(value any, onDispose DisposeSharedResourceF) *SharedResou
 }
 
 type DisposeSharedResourceF func(value any)
+
+type JavascriptLock struct {
+	lock sync.Mutex
+}
+
+func (m *JavascriptLock) Wait() {
+	m.lock.Lock()
+}
+
+func (m *JavascriptLock) Unlock() {
+	m.lock.Unlock()
+}
+
+// OnReturnVoidAction allows to use the javascript 'progpReturnVoid'
+// on a resource pointing to this object.
+func (m *JavascriptLock) OnReturnVoidAction() error {
+	m.Unlock()
+	return nil
+}

@@ -605,4 +605,25 @@ func (m *TypeStringBuffer) FcGoToCppConvCache(_ int) string {
 
 //endregion
 
+//region *progpAPI.SharedResource
+
+func (m *TypeSharedResource) FcCppToV8Encoder(paramId int) string {
+	return fmt.Sprintf(
+		"    argArray[%d] = DOUBLE_TO_V8VALUE(p%d);\n", paramId, paramId)
+}
+
+func (m *TypeSharedResource) FcCppFunctionHeader(paramId int) string {
+	return fmt.Sprintf(", double p%d", paramId)
+}
+
+func (m *TypeSharedResource) FcGoToCppCallParam(paramId int) string {
+	return fmt.Sprintf("\n                (C.double)(p%d.GetId()),", paramId)
+}
+
+func (m *TypeSharedResource) FcGoToCppConvCache(_ int) string {
+	return ""
+}
+
+//endregion
+
 //endregion
