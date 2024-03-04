@@ -623,7 +623,7 @@ func (m *jsFunctionCaller_%FUNCTION_ID%) Call(%FUNCTION_HEADER%) {
 	if jsF.isAsync == cInt1 {
 		jsF.v8Context.taskQueue.Push(func() {%GO_T0_CPP_CONV%
 
-			C.progpJsFunctionCaller_%FUNCTION_ID%(functionPtr, cInt1, jsF.mustDisposeFunction, jsF.currentEvent, resourceContainer,%CALL_PARAM%
+			C.progpJsFunctionCaller_%FUNCTION_ID%(functionPtr, jsF.mustDecreaseTasks, jsF.mustDisposeFunction, jsF.currentEvent, resourceContainer,%CALL_PARAM%
 			)
 		})
 	} else {%GO_T0_CPP_CONV%
