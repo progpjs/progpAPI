@@ -6,14 +6,14 @@ import (
 	"strings"
 )
 
-func GetFunctionSignature(reflectFct reflect.Type) string {
+func GetFunctionSignatureWithoutReturn(reflectFct reflect.Type) string {
 	res, err := progpAPI.ParseGoFunctionReflect(reflectFct, "(function caller)")
 	if err != nil {
 		panic(err)
 	}
 
-	signature := strings.Join(res.ParamTypes, ",")
-	signature = "(" + signature + "):" + res.ReturnType
+	signature := strings.Join(res.ParamTypes[1:], ",")
+	signature = "(" + signature + ")" + res.ReturnType
 
 	return signature
 }
@@ -25,7 +25,7 @@ func AddFunctionCallerToGenerate(reflectFct reflect.Type) {
 		panic(err)
 	}
 
-	signature := strings.Join(res.ParamTypes, ",")
+	signature := strings.Join(res.ParamTypes[1:], ",")
 	signature = "(" + signature + ")"
 
 	// >>> Add to the function which need to be created
