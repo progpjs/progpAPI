@@ -176,7 +176,8 @@ func (m *SharedResourceContainer) compactResourceId() int {
 	PauseMs(100)
 
 	// We lock but we will not unlock
-	// in order to let the caller use the lock
+	// in order to let the caller use th
+	//e lock
 	// when exiting this function.
 	//
 	m.resourcesMutex.Lock()

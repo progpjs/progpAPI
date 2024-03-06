@@ -16,7 +16,6 @@
 
 package progpAPI
 
-import "C"
 import (
 	"fmt"
 	"strings"

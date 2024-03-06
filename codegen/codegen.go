@@ -16,7 +16,6 @@
 
 package codegen
 
-import "C"
 import (
 	"fmt"
 	"github.com/progpjs/progpAPI/v2"
